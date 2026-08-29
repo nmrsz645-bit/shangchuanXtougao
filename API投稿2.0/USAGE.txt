@@ -1,0 +1,15 @@
+API Posting 2.0 Desktop Edition
+
+1. Double click API_Posting_2.exe to open the management UI.
+2. On first use, fill in the authorization settings and import authorization.
+3. Use the account/project tab to detect projects.
+4. Choose or create a posting plan.
+5. Click start in the runtime tab.
+6. To enable Windows login auto start, run the auto-start enable bat file.
+7. To disable Windows login auto start, run the auto-start disable bat file.
+
+Notes:
+- Python is not required on the target computer.
+- Put this folder in a writable path such as D:\auto or E:\auto.
+- Do not put it under C:\Program Files.
+- The release package does not include local tokens, database, or logs.

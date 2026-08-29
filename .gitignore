@@ -1,0 +1,32 @@
+# Python and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Per-computer credentials and runtime state
+共享飞书设置.json
+个人数据/
+API投稿2.0/config/
+API投稿2.0/data/
+API投稿2.0/logs/
+API投稿2.0/.legacy-data-migrated
+API投稿2.0/legacy-migration-error.txt
+自动上传/个人数据/
+
+# Generated packages, builds, acceptance copies, and rollback data
+build/
+build-*/
+发布版/
+发布版-*/
+候选发布-*/
+验收-*/
+
+# Local environment and editor files
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/

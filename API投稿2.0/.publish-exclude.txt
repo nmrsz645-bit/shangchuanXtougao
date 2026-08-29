@@ -1,0 +1,6 @@
+# Per-computer private data.  Never distribute these in a program update.
+config
+data
+logs
+.legacy-data-migrated
+legacy-migration-error.txt
