@@ -11,20 +11,19 @@
 
 ## 下一步：第一条可直接执行的操作
 
-在**当前原电脑**的 PowerShell 中，为本仓库配置用户确认的 Git 提交作者信息，然后提交并推送已经审计过的源码：
+在**下一台电脑**的 PowerShell 中，克隆已交接的源码，然后先阅读本文件和检查 Git 状态；不要立刻运行真实投稿、上传或在线更新：
 
 ```powershell
+Set-Location 'E:\自动化'
+git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
 Set-Location 'E:\自动化\上传+投稿'
-# 将尖括号内容替换为用户提供的 Git 姓名和邮箱。
-git config user.name '<Git 姓名>'
-git config user.email '<Git 邮箱>'
-git commit -m '移交上传投稿中心当前开发进度'
-git push -u origin main
+Get-Content .\TIMEOFF.md
+git status --short
 ```
 
 指定远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`。
 
-截至本次交接配置：项目根目录已初始化为 Git 仓库，分支为 `main`，远程 `origin` 已指向上述地址；88 个源码、测试和文档文件已通过忽略规则与凭据脱敏审计并在暂存区。当前电脑尚未配置 Git 作者姓名/邮箱，因此**尚未创建提交或推送**。新电脑不要直接克隆后继续开发，必须先由原电脑完成上述安全提交和 `git push`。
+截至本次交接配置：项目根目录已初始化为 Git 仓库，分支为 `main`，远程 `origin` 已指向上述地址。源码首次提交 `3a51f9d0ce60de7530ea18bc5d586d40a576ab0d` 已推送；其中 88 个源码、测试和文档文件均通过忽略规则与凭据脱敏审计。当前工作树在本次交接文件更新前为干净状态，受保护数据不在 Git 内。
 
 ## 已完成并验证过的内容
 
@@ -108,7 +107,6 @@ python -m compileall 投稿中心.py center_startup.py daily_restart.py shared_f
 ## 接手前的最小检查清单
 
 1. 阅读本文件、`README.md`，并确认项目根目录目前没有 `AGENTS.md`；如未来创建 `AGENTS.md`，其约定优先。
-2. 在原电脑执行上方第一步；再次人工审查 `git status --short`，确保不能出现任何私有数据后才推送。
-3. 完成 Git 推送后，新电脑才克隆该仓库，并再次检查 `git status --short`、`git remote -v` 和本文件的描述是否一致。
-4. 新电脑必须由用户自行填写飞书配置、完成 Chrome 登录；不要从 Git 或聊天记录恢复 Secret、Token、Cookie。
-5. 对任何新功能先运行相关单元测试，再进行不触发真实投稿/上传的 UI 冒烟验证；涉及发布时按受保护数据、回滚和隔离升级流程完整验证。
+2. 在新电脑执行上方第一步；确认 `git status --short` 无输出、`git remote -v` 指向指定仓库，并核对本文件的描述。
+3. 新电脑必须由用户自行填写飞书配置、完成 Chrome 登录；不要从 Git 或聊天记录恢复 Secret、Token、Cookie。
+4. 对任何新功能先运行相关单元测试，再进行不触发真实投稿/上传的 UI 冒烟验证；涉及发布时按受保护数据、回滚和隔离升级流程完整验证。
