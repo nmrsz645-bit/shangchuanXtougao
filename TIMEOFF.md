@@ -1,123 +1,121 @@
-# 上传 + 投稿中心：交接说明
+# 上传 + 投稿中心：完整交接（暂停点）
 
 ## 当前目标
 
-维护并继续开发 `E:\自动化\上传+投稿` 中的**本地隔离版**“上传 + 投稿中心”。它把 API 投稿和视频上传放进同一个桌面窗口；不得修改下列两个原程序目录：
+本项目是 `E:\自动化\上传+投稿` 下的本地隔离版“上传 + 投稿中心”，在一个窗口中整合 API 投稿和视频上传。
+
+本次交接的状态是：**先暂停，不继续修改程序、不构建、不发布、不执行真实投稿/上传。** 下一会话先按“下一步”核对环境与 Git，再等待用户给出新的明确需求。
+
+绝不修改以下两个原始程序目录：
 
 - `E:\自动化\api投稿2.0`
 - `E:\自动化\自动上传\程序`
 
-当前已完成一项本地验证过的投稿兼容性改动：可在 API 投稿的“授权”页面填写一台电脑共用的“当前小程序 App ID”。该值会用于匹配巨量项目模板和投稿请求；留空时保持原有两种程序链接的 App ID 规则。用户已完成本地实际测试并确认可用，更新程序任务已获授权按既有安全流程处理在线更新；在其交付完整验证结果前，不得自行宣称线上发布完成。本仓库现有离线自动化测试覆盖投稿成功/无兼容模板重试，以及源码交接的私有数据忽略规则。
+源码远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`，分支 `main`。本交接写入时的已推送提交是 `2d46cc7ee42d501578f4b30c009e0628c8513338`（`补充离线流程与交接保护测试`）。接手时必须重新核对，不以这里的提交号代替实时状态。
 
 ## 下一步：第一条可直接执行的操作
 
-在**下一台电脑**的 PowerShell 中，克隆已交接的源码，然后先阅读本文件和检查 Git 状态；不要立刻运行真实投稿、上传或在线更新：
+在已有项目目录的 PowerShell 中执行以下命令；它只读取 Git 与交接状态，不启动业务程序：
+
+```powershell
+Set-Location 'E:\自动化\上传+投稿'
+git pull --ff-only
+git status --short
+git log -1 --oneline
+Get-Content .\README.md
+Get-Content .\AGENTS.md
+Get-Content .\TIMEOFF.md
+```
+
+若新电脑还没有源码，先执行：
 
 ```powershell
 Set-Location 'E:\自动化'
 git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
-Set-Location 'E:\自动化\上传+投稿'
-Get-Content .\TIMEOFF.md
-git status --short
 ```
 
-指定远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`。
+## 已完成并验证的内容
 
-截至本次交接配置：项目根目录已初始化为 Git 仓库，分支为 `main`，远程 `origin` 已指向上述地址。受保护数据不在 Git 内；接手前应再次运行 `git status --short` 和 `git log -1 --oneline`，不要把本文件内的历史提交号当作实时状态。
-
-## 已完成并验证过的内容
-
-以下是此前已完成的功能与当时的验证记录；换电脑、重建环境或再次发布前必须重新运行相关验证，不能把历史结果当作当前机器的实时结果。
-
-- 整合桌面入口：`投稿中心.py` 同时加载 API 投稿和视频上传模块；`启动投稿中心.vbs` 可隐藏命令行窗口启动，`.bat` 为兼容入口。
-- 共享飞书设置：`共享飞书设置.json` 供两个模块共同使用，UI 仍保留飞书 App ID 和 Secret 的配置入口。
-- 7×24 基础保障：本地单实例锁、Windows 启动/异常退出重启、可选自动启动两个任务，以及每天 00:00 检查并启动已停止任务（错过 00:00 后启动/唤醒也会补做检查）。
-- 投稿方案“自动代理”：按**每个方案**独立工作；勾选后每日先用 40，方案内每个项目当天已占用都达到 40 时统一改为 83；次日回到 40。关闭后保留当时的 40/83。新增项目遵循该方案当日阶段。
-- 自动代理的历史验证：根目录测试 4 项、API 投稿 63 项、视频上传 62 项，共 129 项通过；`compileall`、Tk 窗口冒烟启动、冻结 EXE 启动冒烟均已在当时环境通过。
-- 本次小程序 App ID 功能：授权页新增“当前小程序 App ID（留空使用旧规则）”输入框，保存在既有 `API投稿2.0\\config\\settings.json` 的设置中；同机项目共用该值。程序链接中的启动页、参数、书籍链接生成逻辑没有改变。设置为空时，仍按原有两种链接格式选择旧 App ID。
-- 本次源码验证：根目录测试 `6 passed`、API 投稿测试 `67 passed`、视频上传测试 `62 passed`，共 `135 passed`；`python -m compileall -q API投稿2.0\\app 自动上传\\src 投稿中心.py center_startup.py daily_restart.py shared_feishu.py` 通过。本地候选 EXE 启动烟测通过，用户已完成实际本地投稿测试并确认正常。
-- 新增离线回归测试：`API投稿2.0\\tests\\test_run_once_integration.py` 用临时 SQLite 与模拟飞书/巨量接口覆盖“配置 App ID 后投稿成功”和“无兼容模板后释放任务等待重试”；`test_handoff_safety.py` 校验 Git 忽略规则与 API 更新包排除 `config`、`data`、`logs`。这不是实际线上升级验收。
-- 本地测试候选包：`候选发布-20260829-小程序AppID-本地测试\\上传投稿中心\\上传投稿中心.exe`，SHA-256 为 `07ED06FFF2A684CAA7C2B32E56D71D6D267BB9EBD30314BA705197C2F819B99B`。它仅作本次经测试的程序候选来源；其中的运行配置/数据仍属私有数据，不能提交 Git。
-- 本地发布版曾以仅替换 `上传投稿中心.exe` 和 `_internal` 的方式安全更新；当时确认 1,163 个运行文件一致，用户数据未变，并保留了 `program.previous-20260819222728` 回滚副本。
-- 曾完成 1.0.1 在线更新发布和旧客户端隔离升级验证；若后续涉及在线更新，必须重新读取公开清单、下载包哈希、隔离升级和数据保留结果后才能声明成功。
+- 已完成单窗口整合入口：`投稿中心.py` 加载飞书设置、API 投稿和视频上传；`启动投稿中心.vbs` 可隐藏命令行启动，`.bat` 保留兼容入口。
+- 共享飞书设置仍保留 App ID、Secret、投稿表格链接和黏贴表格链接的配置入口；两模块共用 `共享飞书设置.json`。
+- 7×24 基础能力已实现：单实例锁、Windows 启动/异常退出重启、可选自动启动任务，以及每天 00:00（或错过后补做）检查并启动已停止任务。
+- 投稿方案“自动代理”按每个方案独立运行：每天先使用 40；方案内所有项目当天均达 40 后切换为 83；次日回到 40；关闭时保留当时 40/83。
+- 已新增 API 投稿“当前小程序 App ID（留空使用旧规则）”设置。它保存在本机 `API投稿2.0\config\settings.json`；同一电脑的投稿项目共用该值。填写时同时影响模板匹配、两种既有程序链接格式和生成的 `sslocal` 链接；留空继续原规则。
+- 本次源码验证已通过：根目录 6 项、API 投稿 67 项、视频上传 62 项，共 135 项；`compileall` 通过。新增的完整流程测试全程使用临时 SQLite 与模拟飞书/巨量接口，不会真实投稿或上传。
+- Git 已包含源码、测试和交接文档：`6aabf98` 提交 App ID 功能与初版交接，`2d46cc7` 提交离线流程测试、私有数据保护测试、README、AGENTS 与本交接文件。
+- “上传 + 投稿中心”线上正式版本已发布为 **1.0.2**。更新包：`https://luotuoruanjiangengx.oss-cn-beijing.aliyuncs.com/updates/shang-chuan-tou-gao-zhong-xin/1.0.2/app.zip`，SHA-256：`95C284D9380935B7A935632C0A62C94F7C05BC7FA92432E8CC2509187D3DBE82`。完整包：`https://luotuoruanjiangengx.oss-cn-beijing.aliyuncs.com/packages/shang-chuan-tou-gao-zhong-xin-1.0.2.zip`，SHA-256：`1F764A1CBD7E7079F084A5EA7A7FE739313D546538AAA787F85E1A971F914434`。
+- 1.0.2 发布已完成旧 1.0.0 客户端隔离升级验证：生成 `app.previous`，11 项受保护数据逐字节不变，更新包递归检查为 1,209 个程序文件且不含用户数据、配置、日志或队列；主清单、旧客户端兼容清单和两个下载目录均已公网回读为 1.0.2。
 
 ## 未完成事项
 
-- 在线更新任务已收到正式发布通知，但本文件不把“已通知”视为“已上线”。接手者必须取得其回报的线上版本、公开包/清单哈希、隔离旧客户端升级、受保护数据保留和 `app.previous` 回滚证据后，才能通知其他用户更新。
-- 尚未在一台全新电脑验证 Python/Playwright/Chrome、飞书授权、巨量接口、浏览器登录资料或 7×24 计划任务。这些都需要真实的本地用户配置，不能在没有授权的情况下伪造或上传。
-- 尚未在新电脑验证 Python/Playwright/Chrome、飞书授权、巨量接口、浏览器登录资料或 7×24 计划任务。这些都需要真实的本地用户配置，不能在没有授权的情况下伪造或上传。
-- 当前没有待修复的已确认代码故障。截图中出现过 `The read operation timed out`（外部读取超时）和 `no_task`（暂无任务）；它们不是已确认的程序崩溃。若复现，先保存运行日志和时间点，再做只读网络/API 检查。
+- 当前没有获授权的功能修改。接手者不要自行继续开发；先等待用户的新需求。
+- 尚未在“全新电脑 + 新的用户配置”上完成真实飞书授权、巨量接口、Chrome 登录、Playwright 和 7×24 计划任务的端到端验收。Git 不包含这些私有运行状态。
+- 现有自动化测试为离线回归测试；真实巨量创建单元、飞书读写、Chrome 上传和线上升级不应由测试直接触发。
+- 若某台旧 1.0.1 安装包缺少安装根目录 `Start.cmd`，它不会自动检查更新；必须先单独修复启动/更新入口，不能通过直接运行 `app\上传投稿中心.exe` 来验证在线更新。
 
-## 关键文件与路径
+## 下一位接手者的关键文件与路径
 
 | 用途 | 路径 |
 | --- | --- |
-| 集成程序根目录 | `E:\自动化\上传+投稿` |
-| 集成入口和 7×24 调度 | `投稿中心.py`、`center_startup.py`、`daily_restart.py`、`start_center.py` |
-| 隐藏黑框启动入口 | `启动投稿中心.vbs` |
+| 项目根目录 | `E:\自动化\上传+投稿` |
+| 接手约定 | `AGENTS.md` |
+| 使用说明 | `README.md` |
+| 当前暂停点与交接 | `TIMEOFF.md` |
+| 集成入口与 7×24 调度 | `投稿中心.py`、`center_startup.py`、`daily_restart.py`、`start_center.py` |
 | 共享飞书设置实现 | `shared_feishu.py` |
-| 投稿桌面 UI 与小程序 App ID 输入 | `API投稿2.0\app\desktop_posting\desktop_app.py` |
-| 小程序 App ID 规则与链接生成 | `API投稿2.0\app\desktop_posting\microapp_link.py` |
-| 模板筛选和投稿请求体 | `API投稿2.0\app\desktop_posting\qianchuan_client.py`、`run_once.py` |
-| API 投稿设置持久化 | `API投稿2.0\app\desktop_posting\settings.py` |
-| 投稿 SQLite 存储 | `API投稿2.0\app\desktop_posting\storage.py` |
-| API 投稿测试 | `API投稿2.0\tests\` |
-| 投稿完整流程离线回归测试 | `API投稿2.0\tests\test_run_once_integration.py` |
-| 源码交接私有数据保护测试 | `test_handoff_safety.py` |
+| App ID 输入界面 | `API投稿2.0\app\desktop_posting\desktop_app.py` |
+| App ID 规则与链接生成 | `API投稿2.0\app\desktop_posting\microapp_link.py` |
+| 模板筛选/请求体/投稿执行 | `API投稿2.0\app\desktop_posting\qianchuan_client.py`、`run_once.py` |
+| API 设置与状态数据库实现 | `API投稿2.0\app\desktop_posting\settings.py`、`storage.py` |
+| API 离线完整流程测试 | `API投稿2.0\tests\test_run_once_integration.py` |
+| 交接私有数据保护测试 | `test_handoff_safety.py` |
 | 视频上传源码与测试 | `自动上传\src\video_feishu\`、`自动上传\tests\` |
-| 视频上传依赖声明 | `自动上传\pyproject.toml` |
 | 正式本地发布版 | `发布版\上传投稿中心\上传投稿中心.exe` |
-| 回滚副本 | `发布版\上传投稿中心\program.previous-20260819143406`、`program.previous-20260819222728` |
-| 历史候选/验收/构建目录 | `候选发布-*`、`验收-*`、`build-*`；仅作历史证据，不能作为新的发布源 |
+| 本次本地测试候选（仅历史证据） | `候选发布-20260829-小程序AppID-本地测试\上传投稿中心\上传投稿中心.exe` |
 
 ## 运行与验证命令
 
-不要在没有用户授权时启动真实投稿、上传、浏览器自动化或在线更新。以下是源码级的测试命令；需先在新电脑安装与项目匹配的 Python 和依赖，并在项目根目录执行：
+未经用户明确授权，不运行真实投稿、真实上传、浏览器自动化、构建或在线更新。以下命令均为源码级离线验证：
 
 ```powershell
 Set-Location 'E:\自动化\上传+投稿'
 
-# 根目录的集成启动、共享设置与源码交接保护测试
+# 根目录集成、共享设置、Git 私有数据保护
 python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py -q
 
-# API 投稿模块测试（必须让 app 包可被导入）
+# API 投稿：让 app 包可导入，再运行全部离线测试
 $env:PYTHONPATH = 'E:\自动化\上传+投稿\API投稿2.0\app'
 python -m pytest API投稿2.0\tests -q
 
-# API 投稿源码语法检查（不触发真实业务）
-python -m compileall -q API投稿2.0\app
-
-# 视频上传模块测试：先按 pyproject.toml 安装其 dev 依赖
+# 视频上传：离线测试
 Set-Location 'E:\自动化\上传+投稿\自动上传'
 python -m pytest -q
 
-# 仅做语法编译检查，不执行实际业务
+# 语法检查，不执行真实业务
 Set-Location 'E:\自动化\上传+投稿'
-python -m compileall 投稿中心.py center_startup.py daily_restart.py shared_feishu.py API投稿2.0\app 自动上传\src
+python -m compileall -q API投稿2.0\app 自动上传\src 投稿中心.py center_startup.py daily_restart.py shared_feishu.py
 ```
 
-本地运行请双击 `E:\自动化\上传+投稿\启动投稿中心.vbs`。视频自动上传需要本机安装 Google Chrome 并由用户完成登录；冻结 EXE 不包含 Chrome。
+## 已知问题与诊断边界
 
-## 严禁误动、误传或误提交的数据
+- `The read operation timed out` 是外部读取超时，不足以单独证明程序崩溃；复现时先保存日志与时间点，再进行只读网络/API 检查。
+- `no_task` 表示当前没有可领取的任务，不是崩溃。
+- `worker_error: invalid param` 通常来自飞书租户 Token/飞书设置，不应靠修改投稿逻辑猜测修复。
+- `没有与该程序链接兼容的项目模板` 表示当前项目模板的 App ID 与投稿链接/已填写的本机 App ID 不一致，或模板不再可用；先检查授权页的 App ID 与巨量模板，勿直接改模板筛选逻辑。
+- 线上更新包已经 1.0.2，但“服务器发布”不是对未运行客户端的主动通知；客户端需从安装根目录 `Start.cmd` 进入更新检查。
 
-以下内容是每台电脑的私有运行数据；**不得提交 Git、上传 GitHub、打进在线更新包、清空、覆盖或拿旧副本替换**：
+## 严禁误动、误传、误提交的数据和配置
 
-- `共享飞书设置.json`（含飞书凭据）
+以下为每台电脑私有运行数据。**不得提交 Git、上传 GitHub、打进更新包、清空、覆盖或用旧副本替换：**
+
+- `共享飞书设置.json`（飞书凭据和表格链接）
 - `个人数据\`
-- `API投稿2.0\config\`
-- `API投稿2.0\data\`，尤其 `state.db` 及其 `-wal` / `-shm`
+- `API投稿2.0\config\`（含 Token 与本机 App ID）
+- `API投稿2.0\data\`，尤其 `state.db` 与 `-wal` / `-shm`
 - `API投稿2.0\logs\`
-- `自动上传\个人数据\`（Chrome 登录资料、Token、队列、统计、日志等）
-- `发布版\上传投稿中心\个人数据\`
-- `发布版\上传投稿中心\API投稿2.0\` 下的运行配置与数据
+- `自动上传\个人数据\`（Chrome 登录资料、Token、队列、统计、日志）
+- `发布版\上传投稿中心\个人数据\` 及其 `API投稿2.0` 下的运行配置、数据和日志
 - 所有 `program.previous-*` 回滚副本
-- 用户新增的文件、视频源文件、上传队列、失败重试记录和浏览器配置
+- 用户新增文件、视频源、上传队列、失败重试记录、浏览器配置与任何未列出的本机私有文件
 
-在线更新时只能替换程序文件（EXE 和经审计的 `_internal`）；先做独立临时目录校验、受保护数据哈希比对、生成新的 `app.previous`，失败必须回滚。只有公开下载包、清单和哈希均可读，且隔离旧客户端真实升级通过后，才可切换线上 `latest.json` / `catalog.json`。
-
-## 接手前的最小检查清单
-
-1. 阅读本文件、`README.md`、`AGENTS.md`，并先确认当前提交、Git 状态和远程地址均与本文件一致。
-2. 在新电脑执行上方第一步；确认 `git status --short` 无输出、`git remote -v` 指向指定仓库，并核对本文件的描述。
-3. 新电脑必须由用户自行填写飞书配置、完成 Chrome 登录；不要从 Git 或聊天记录恢复 Secret、Token、Cookie。
-4. 对任何新功能先运行相关单元测试，再进行不触发真实投稿/上传的 UI 冒烟验证；涉及发布时按受保护数据、回滚和隔离升级流程完整验证。
+涉及未来在线更新时，只能替换经审计的程序文件；必须先临时目录校验、比对受保护数据哈希、保留新的 `app.previous`，失败即回滚。没有完整的公网读回和隔离旧客户端升级证据，不得切换或宣称新版本完成。
