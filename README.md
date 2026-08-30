@@ -41,13 +41,13 @@ python -m venv .venv
 
 ```powershell
 Set-Location 'E:\自动化\上传+投稿'
-.\.venv\Scripts\python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py -q
+$python = Join-Path $PWD '.venv\Scripts\python.exe'
+& $python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py -q
 
-$env:PYTHONPATH = 'E:\自动化\上传+投稿\API投稿2.0\app'
-.\.venv\Scripts\python -m pytest API投稿2.0\tests -q
+& $python run_api_tests.py
 
 Set-Location 'E:\自动化\上传+投稿\自动上传'
-..\.venv\Scripts\python -m pytest -q
+& $python -m pytest -q
 ```
 
 测试使用模拟的飞书和巨量接口，不会真实投稿、上传、打开 Chrome 或触发在线更新。更新器实际升级后的数据保留，仍须由更新程序在隔离环境中验证。

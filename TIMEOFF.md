@@ -87,25 +87,25 @@ git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
 
 ## 运行与验证命令
 
-未经用户明确授权，不运行真实投稿、真实上传、浏览器自动化、构建或在线更新。以下命令均为源码级离线验证：
+未经用户明确授权，不运行真实投稿、真实上传、浏览器自动化、构建或在线更新。以下命令均为源码级离线验证，并且使用项目自己的 `.venv`：
 
 ```powershell
 Set-Location 'E:\自动化\上传+投稿'
+$python = Join-Path $PWD '.venv\Scripts\python.exe'
 
 # 根目录集成、共享设置、Git 私有数据保护、发布候选安全检查
-python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py -q
+& $python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py -q
 
-# API 投稿：让 app 包可导入，再运行全部离线测试
-$env:PYTHONPATH = 'E:\自动化\上传+投稿\API投稿2.0\app'
-python -m pytest API投稿2.0\tests -q
+# API 投稿：跨平台测试入口会自行配置 app 导入路径
+& $python run_api_tests.py
 
 # 视频上传：离线测试
 Set-Location 'E:\自动化\上传+投稿\自动上传'
-python -m pytest -q
+& $python -m pytest -q
 
 # 语法检查，不执行真实业务
 Set-Location 'E:\自动化\上传+投稿'
-python -m compileall -q API投稿2.0\app 自动上传\src 投稿中心.py center_startup.py daily_restart.py shared_feishu.py
+& $python -m compileall -q API投稿2.0\app 自动上传\src 投稿中心.py center_startup.py daily_restart.py shared_feishu.py release_safety.py
 ```
 
 ## 已知问题与诊断边界
