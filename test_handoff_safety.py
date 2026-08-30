@@ -35,3 +35,10 @@ def test_handoff_documents_include_reproducible_local_test_setup():
     assert "requirements-dev.txt" in readme
     assert "Google Chrome" in readme
     assert "playwright install chromium" not in readme
+
+
+def test_handoff_ci_covers_windows_without_business_credentials():
+    workflow = (ROOT / ".github" / "workflows" / "offline-tests.yml").read_text(encoding="utf-8")
+    assert "windows-latest" in workflow
+    assert "共享飞书设置.json" not in workflow
+    assert "API投稿2.0/config" not in workflow
