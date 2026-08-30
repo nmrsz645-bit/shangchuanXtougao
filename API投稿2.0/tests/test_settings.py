@@ -15,8 +15,9 @@ class SettingsTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            save_settings(root, AppSettings(qianchuan_app_id="id", submission_sheet_url="https://x"))
+            save_settings(root, AppSettings(qianchuan_app_id="id", submission_sheet_url="https://x", mini_program_app_id="tt-new"))
             self.assertEqual("id", load_settings(root).qianchuan_app_id)
+            self.assertEqual("tt-new", load_settings(root).mini_program_app_id)
             self.assertTrue((root / "config" / "settings.json").exists())
 
 

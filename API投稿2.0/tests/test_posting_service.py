@@ -95,6 +95,12 @@ class PostingServiceTests(unittest.TestCase):
 
         self.assertEqual("tte3a3951e7c939c7701", choose_app_id("bookId=1&channelId=2&micro_pannel_id=x"))
 
+    def test_configured_mini_app_overrides_both_legacy_link_styles(self):
+        from desktop_posting.microapp_link import choose_app_id
+
+        self.assertEqual("tt23a45519bc945c7401", choose_app_id("bookId=1", "tt23a45519bc945c7401"))
+        self.assertEqual("tt23a45519bc945c7401", choose_app_id("book_id=r1&chapter_id=1", "tt23a45519bc945c7401"))
+
     def test_template_must_match_link_mini_app(self):
         from desktop_posting.qianchuan_client import template_supports_link
 
@@ -102,8 +108,9 @@ class PostingServiceTests(unittest.TestCase):
         book_id_template = {"promotion_materials": {"mini_program_info": {"app_id": "tte3a3951e7c939c7701"}}}
         self.assertTrue(template_supports_link(default_template, "book_id=r1&chapter_id=1"))
         self.assertFalse(template_supports_link(book_id_template, "book_id=r1&chapter_id=1"))
+        self.assertTrue(template_supports_link({"promotion_materials": {"mini_program_info": {"app_id": "tt23a45519bc945c7401"}}}, "bookId=1", "tt23a45519bc945c7401"))
 
-    def test_create_body_uses_link_app_id_not_template_app_id(self):
+    def test_create_body_uses_legacy_app_id_when_no_override_is_configured(self):
         from desktop_posting.qianchuan_client import build_promotion_body
 
         template = {
@@ -115,9 +122,14 @@ class PostingServiceTests(unittest.TestCase):
         material = {"video_id": "v1", "video_cover_id": "cover1"}
         body = build_promotion_body(
             template, "1", "2", "Book", "Tag", material,
-            "pages/novel_plugin/index", "book_id=r1&chapter_id=1", "sslocal://microapp?x", "tte3a3951e7c939c7701",
+            "pages/novel_plugin/index", "book_id=r1&chapter_id=1", "sslocal://microapp?x",
         )
         self.assertEqual("tt8a56fceb1563152001", body["promotion_materials"]["mini_program_info"]["app_id"])
+        configured_body = build_promotion_body(
+            template, "1", "2", "Book", "Tag", material,
+            "pages/novel_plugin/index", "bookId=1", "sslocal://microapp?x", "tt23a45519bc945c7401",
+        )
+        self.assertEqual("tt23a45519bc945c7401", configured_body["promotion_materials"]["mini_program_info"]["app_id"])
 
     def test_material_sort_accepts_api_datetime(self):
         from desktop_posting.qianchuan_client import material_created_key

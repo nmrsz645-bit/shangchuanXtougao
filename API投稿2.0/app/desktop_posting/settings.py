@@ -12,6 +12,7 @@ class AppSettings:
     feishu_secret: str = ""
     submission_sheet_url: str = ""
     configured_advertiser_ids: str = ""
+    mini_program_app_id: str = ""
 
 
 def _path(base_dir):

@@ -55,18 +55,18 @@ def resolve_latest_project(items, base_name):
     return None
 
 
-def template_supports_link(template, start_param):
+def template_supports_link(template, start_param, configured_app_id=""):
     mini_program = (template.get("promotion_materials") or {}).get("mini_program_info") or {}
     template_app_id = str(mini_program.get("app_id") or "").strip()
-    return not template_app_id or template_app_id == choose_app_id(start_param)
+    return not template_app_id or template_app_id == choose_app_id(start_param, configured_app_id)
 
 
-def choose_compatible_template(promotions, start_param):
+def choose_compatible_template(promotions, start_param, configured_app_id=""):
     usable = [
         item for item in promotions
         if item.get("promotion_materials")
         and not str(item.get("promotion_name") or item.get("name") or "").startswith("API_TEST")
-        and template_supports_link(item, start_param)
+        and template_supports_link(item, start_param, configured_app_id)
     ]
     enabled = [item for item in usable if item.get("opt_status") != "DISABLE"]
     if enabled:
@@ -183,7 +183,7 @@ def build_promotion_body(template, advertiser_id, project_id, book_name, tag, ma
     materials = deepcopy(template.get("promotion_materials") or {}); native = deepcopy(template.get("native_setting") or {}); materials["title_material_list"] = [{"title": tag or book_name}]
     native["is_feed_and_fav_see"] = "ON"
     materials["video_material_list"] = [{"video_id": str(material.get("video_id") or material.get("id")), "video_cover_id": material.get("video_cover_id") or material.get("cover_id"), "image_mode": ((materials.get("video_material_list") or [{}])[0].get("image_mode") or "CREATIVE_IMAGE_MODE_VIDEO_VERTICAL"), "video_hp_visibility": "ALWAYS_VISIBLE"}]
-    materials["mini_program_info"] = {"app_id": choose_app_id(start_param), "start_path": start_path, "params": start_param, "url": landing_url}
+    materials["mini_program_info"] = {"app_id": choose_app_id(start_param, app_id), "start_path": start_path, "params": start_param, "url": landing_url}
     body = {"advertiser_id": int(advertiser_id), "project_id": int(project_id), "name": book_name, "operation": "ENABLE", "promotion_materials": materials, "native_setting": native}
     for key in ("ad_download_status","auto_extend_traffic","bid","brand_info","budget","budget_mode","config_id","cpa_bid","creative_auto_generate_switch","deep_cpabid","first_roi_goal","is_comment_disable","materials_type","roi_goal","source","union_bid_ratio"):
         if template.get(key) is not None: body[key] = deepcopy(template[key])

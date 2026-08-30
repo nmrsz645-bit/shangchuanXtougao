@@ -7,7 +7,7 @@
 - `E:\自动化\api投稿2.0`
 - `E:\自动化\自动上传\程序`
 
-当前没有获授权的功能修改、构建、发布或在线更新操作。下一位接手者先完成安全的源码交接，再按用户新的明确需求工作。
+当前已完成一项本地验证过的投稿兼容性改动：可在 API 投稿的“授权”页面填写一台电脑共用的“当前小程序 App ID”。该值会用于匹配巨量项目模板和投稿请求；留空时保持原有两种程序链接的 App ID 规则。用户已完成本地实际测试并确认可用，更新程序任务已获授权按既有安全流程处理在线更新；在其交付完整验证结果前，不得自行宣称线上发布完成。
 
 ## 下一步：第一条可直接执行的操作
 
@@ -23,7 +23,7 @@ git status --short
 
 指定远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`。
 
-截至本次交接配置：项目根目录已初始化为 Git 仓库，分支为 `main`，远程 `origin` 已指向上述地址。源码首次提交 `3a51f9d0ce60de7530ea18bc5d586d40a576ab0d` 已推送；其中 88 个源码、测试和文档文件均通过忽略规则与凭据脱敏审计。当前工作树在本次交接文件更新前为干净状态，受保护数据不在 Git 内。
+截至本次交接配置：项目根目录已初始化为 Git 仓库，分支为 `main`，远程 `origin` 已指向上述地址。受保护数据不在 Git 内；接手前应再次运行 `git status --short` 和 `git log -1 --oneline`，不要把本文件内的历史提交号当作实时状态。
 
 ## 已完成并验证过的内容
 
@@ -34,13 +34,16 @@ git status --short
 - 7×24 基础保障：本地单实例锁、Windows 启动/异常退出重启、可选自动启动两个任务，以及每天 00:00 检查并启动已停止任务（错过 00:00 后启动/唤醒也会补做检查）。
 - 投稿方案“自动代理”：按**每个方案**独立工作；勾选后每日先用 40，方案内每个项目当天已占用都达到 40 时统一改为 83；次日回到 40。关闭后保留当时的 40/83。新增项目遵循该方案当日阶段。
 - 自动代理的历史验证：根目录测试 4 项、API 投稿 63 项、视频上传 62 项，共 129 项通过；`compileall`、Tk 窗口冒烟启动、冻结 EXE 启动冒烟均已在当时环境通过。
+- 本次小程序 App ID 功能：授权页新增“当前小程序 App ID（留空使用旧规则）”输入框，保存在既有 `API投稿2.0\\config\\settings.json` 的设置中；同机项目共用该值。程序链接中的启动页、参数、书籍链接生成逻辑没有改变。设置为空时，仍按原有两种链接格式选择旧 App ID。
+- 本次源码验证：API 投稿测试 `65 passed`、根目录测试 `4 passed`、`python -m compileall -q API投稿2.0\\app` 通过；本地候选 EXE 启动烟测通过，用户已完成实际本地投稿测试并确认正常。
+- 本地测试候选包：`候选发布-20260829-小程序AppID-本地测试\\上传投稿中心\\上传投稿中心.exe`，SHA-256 为 `07ED06FFF2A684CAA7C2B32E56D71D6D267BB9EBD30314BA705197C2F819B99B`。它仅作本次经测试的程序候选来源；其中的运行配置/数据仍属私有数据，不能提交 Git。
 - 本地发布版曾以仅替换 `上传投稿中心.exe` 和 `_internal` 的方式安全更新；当时确认 1,163 个运行文件一致，用户数据未变，并保留了 `program.previous-20260819222728` 回滚副本。
 - 曾完成 1.0.1 在线更新发布和旧客户端隔离升级验证；若后续涉及在线更新，必须重新读取公开清单、下载包哈希、隔离升级和数据保留结果后才能声明成功。
 
 ## 未完成事项
 
-- 当前根目录尚未纳入 Git；尚未向上方 GitHub 仓库提交或推送任何源码。
-- 尚未建立适用于本项目的 `.gitignore`、`.env.example`、根目录 `AGENTS.md` 和可复现依赖锁定文件。创建它们前必须先盘点全部私有目录，不能靠猜测排除。
+- 在线更新任务已收到正式发布通知，但本文件不把“已通知”视为“已上线”。接手者必须取得其回报的线上版本、公开包/清单哈希、隔离旧客户端升级、受保护数据保留和 `app.previous` 回滚证据后，才能通知其他用户更新。
+- 尚未在一台全新电脑验证 Python/Playwright/Chrome、飞书授权、巨量接口、浏览器登录资料或 7×24 计划任务。这些都需要真实的本地用户配置，不能在没有授权的情况下伪造或上传。
 - 尚未在新电脑验证 Python/Playwright/Chrome、飞书授权、巨量接口、浏览器登录资料或 7×24 计划任务。这些都需要真实的本地用户配置，不能在没有授权的情况下伪造或上传。
 - 当前没有待修复的已确认代码故障。截图中出现过 `The read operation timed out`（外部读取超时）和 `no_task`（暂无任务）；它们不是已确认的程序崩溃。若复现，先保存运行日志和时间点，再做只读网络/API 检查。
 
@@ -52,8 +55,10 @@ git status --short
 | 集成入口和 7×24 调度 | `投稿中心.py`、`center_startup.py`、`daily_restart.py`、`start_center.py` |
 | 隐藏黑框启动入口 | `启动投稿中心.vbs` |
 | 共享飞书设置实现 | `shared_feishu.py` |
-| 投稿桌面 UI | `API投稿2.0\app\desktop_posting\desktop_app.py` |
-| 投稿执行与自动代理切换 | `API投稿2.0\app\desktop_posting\run_once.py`、`plans.py` |
+| 投稿桌面 UI 与小程序 App ID 输入 | `API投稿2.0\app\desktop_posting\desktop_app.py` |
+| 小程序 App ID 规则与链接生成 | `API投稿2.0\app\desktop_posting\microapp_link.py` |
+| 模板筛选和投稿请求体 | `API投稿2.0\app\desktop_posting\qianchuan_client.py`、`run_once.py` |
+| API 投稿设置持久化 | `API投稿2.0\app\desktop_posting\settings.py` |
 | 投稿 SQLite 存储 | `API投稿2.0\app\desktop_posting\storage.py` |
 | API 投稿测试 | `API投稿2.0\tests\` |
 | 视频上传源码与测试 | `自动上传\src\video_feishu\`、`自动上传\tests\` |
@@ -75,6 +80,9 @@ python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu
 # API 投稿模块测试（必须让 app 包可被导入）
 $env:PYTHONPATH = 'E:\自动化\上传+投稿\API投稿2.0\app'
 python -m pytest API投稿2.0\tests -q
+
+# API 投稿源码语法检查（不触发真实业务）
+python -m compileall -q API投稿2.0\app
 
 # 视频上传模块测试：先按 pyproject.toml 安装其 dev 依赖
 Set-Location 'E:\自动化\上传+投稿\自动上传'
@@ -106,7 +114,7 @@ python -m compileall 投稿中心.py center_startup.py daily_restart.py shared_f
 
 ## 接手前的最小检查清单
 
-1. 阅读本文件、`README.md`，并确认项目根目录目前没有 `AGENTS.md`；如未来创建 `AGENTS.md`，其约定优先。
+1. 阅读本文件、`README.md`、`AGENTS.md`，并先确认当前提交、Git 状态和远程地址均与本文件一致。
 2. 在新电脑执行上方第一步；确认 `git status --short` 无输出、`git remote -v` 指向指定仓库，并核对本文件的描述。
 3. 新电脑必须由用户自行填写飞书配置、完成 Chrome 登录；不要从 Git 或聊天记录恢复 Secret、Token、Cookie。
 4. 对任何新功能先运行相关单元测试，再进行不触发真实投稿/上传的 UI 冒烟验证；涉及发布时按受保护数据、回滚和隔离升级流程完整验证。

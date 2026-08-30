@@ -8,7 +8,10 @@ BOOK_ID_STYLE_APP_ID = "tte3a3951e7c939c7701"
 CHECKSUM_SALT = "bytetimordance"
 
 
-def choose_app_id(start_param):
+def choose_app_id(start_param, configured_app_id=""):
+    configured_app_id = str(configured_app_id or "").strip()
+    if configured_app_id:
+        return configured_app_id
     query = dict(parse_qsl(str(start_param or ""), keep_blank_values=True))
     if "bookId" in query:
         return BOOK_ID_STYLE_APP_ID

@@ -153,6 +153,20 @@ class CompatibleTargetTests(unittest.TestCase):
 
         self.assertIsNone(target)
 
+    def test_configured_mini_app_selects_its_template(self):
+        from desktop_posting.models import PlanEntry, ProjectRef
+        from desktop_posting.run_once import choose_compatible_target
+
+        entry = PlanEntry(1, 1, ProjectRef("a", "A", "p1", "项目_1"), 0, 10)
+        target = choose_compatible_target(
+            [entry], "token", "book_id=r1&chapter_id=1",
+            list_projects_func=lambda *_: [{"project_id": "p1", "name": "项目_1"}],
+            list_promotions_func=lambda *_: [{"promotion_materials": {"mini_program_info": {"app_id": "tt23a45519bc945c7401"}}}],
+            configured_app_id="tt23a45519bc945c7401",
+        )
+
+        self.assertEqual(entry, target[0])
+
 
 if __name__ == "__main__":
     unittest.main()

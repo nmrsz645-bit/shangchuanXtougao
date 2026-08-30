@@ -29,7 +29,7 @@ class DesktopApp:
     def _build_auth(self):
         tab = ttk.Frame(self.tabs); self.tabs.add(tab, text="授权")
         self.fields = {}
-        for row, (key, label) in enumerate((("qianchuan_app_id", "千川 App ID"), ("qianchuan_secret", "千川 Secret"), ("configured_advertiser_ids", "指定账户 ID（逗号分隔）"))):
+        for row, (key, label) in enumerate((("qianchuan_app_id", "千川 App ID"), ("qianchuan_secret", "千川 Secret"), ("configured_advertiser_ids", "指定账户 ID（逗号分隔）"), ("mini_program_app_id", "当前小程序 App ID（留空使用旧规则）"))):
             ttk.Label(tab, text=label).grid(row=row, column=0, sticky="w", padx=12, pady=6)
             entry = ttk.Entry(tab, width=90, show="*" if "secret" in key else "")
             entry.insert(0, getattr(self.settings, key)); entry.grid(row=row, column=1, sticky="ew", padx=12, pady=6); self.fields[key] = entry

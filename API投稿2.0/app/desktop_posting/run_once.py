@@ -102,7 +102,7 @@ def finish_runtime_activity(store, book, advertiser_id, project, result):
     })
 
 
-def choose_compatible_target(entries, access_token, start_param, list_projects_func=list_projects, list_promotions_func=list_promotions):
+def choose_compatible_target(entries, access_token, start_param, list_projects_func=list_projects, list_promotions_func=list_promotions, configured_app_id=""):
     project_cache = {}
     for entry in entries:
         advertiser_id = entry.project.advertiser_id
@@ -114,20 +114,20 @@ def choose_compatible_target(entries, access_token, start_param, list_projects_f
         if not project:
             continue
         templates = list_promotions_func(access_token, advertiser_id, project["project_id"])
-        template = choose_compatible_template(templates, start_param)
+        template = choose_compatible_template(templates, start_param, configured_app_id)
         if template:
             return entry, project, template
     return None
 
 
-def choose_locked_target(locked_target, access_token, start_param, list_projects_func=list_projects, list_promotions_func=list_promotions):
+def choose_locked_target(locked_target, access_token, start_param, list_projects_func=list_projects, list_promotions_func=list_promotions, configured_app_id=""):
     advertiser_id = locked_target["advertiser_id"]
     projects = list_projects_func(access_token, advertiser_id)
     project = resolve_latest_project(projects, project_base_name(locked_target.get("project_name") or ""))
     if not project:
         return None
     project_id = str(project.get("project_id") or project.get("id") or "")
-    template = choose_compatible_template(list_promotions_func(access_token, advertiser_id, project_id), start_param)
+    template = choose_compatible_template(list_promotions_func(access_token, advertiser_id, project_id), start_param, configured_app_id)
     return (project, template) if template else None
 
 
@@ -152,7 +152,7 @@ def run_once(base_dir, book_name=None):
         path, params = parse_program_fields(values.get("程序链接"), values.get("启动页"))
         locked_target = store.task_target(task["row_number"], book)
         if locked_target:
-            locked = choose_locked_target(locked_target, token["access_token"], params)
+            locked = choose_locked_target(locked_target, token["access_token"], params, configured_app_id=settings.mini_program_app_id)
             if not locked: raise RuntimeError("原失败项目不存在、无权限或不再兼容该程序链接")
             project, template = locked
             advertiser_id = locked_target["advertiser_id"]
@@ -166,7 +166,7 @@ def run_once(base_dir, book_name=None):
                 release_task(settings, task, "所有项目今日额度已满", False, retry_time)
                 finish_runtime_activity(store, book, "", None, "all_projects_full")
                 return "all_projects_full"
-            target = choose_compatible_target(entries, token["access_token"], params)
+            target = choose_compatible_target(entries, token["access_token"], params, configured_app_id=settings.mini_program_app_id)
             if not target: raise RuntimeError("没有与该程序链接兼容的项目模板")
             entry, project, template = target
             advertiser_id = entry.project.advertiser_id
@@ -178,7 +178,7 @@ def run_once(base_dir, book_name=None):
         material = select_material(search_materials(token["access_token"], advertiser_id, book), book)
         if not material: raise RuntimeError("素材库未找到同名视频")
         material["video_cover_id"] = cover_id(material)
-        body = build_promotion_body(template, advertiser_id, project["project_id"], book, values.get("标签", ""), material, path, params, generate(path, params))
+        body = build_promotion_body(template, advertiser_id, project["project_id"], book, values.get("标签", ""), material, path, params, generate(path, params, settings.mini_program_app_id), settings.mini_program_app_id)
         set_runtime_activity(store, "creating_promotion", book, advertiser_id, str(project.get("name") or project["project_id"]), str(project["project_id"]))
         created, next_name_suffix = create_with_unique_name(
             token["access_token"],
