@@ -26,7 +26,9 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pip install -e "./自动上传[dev]"
       - run: python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py -q
-      - run: PYTHONPATH="$GITHUB_WORKSPACE/API投稿2.0/app" python -m pytest API投稿2.0/tests -q
+      - run: python -m pytest API投稿2.0/tests -q
+        env:
+          PYTHONPATH: ${{ github.workspace }}/API投稿2.0/app
       - run: python -m pytest -q
         working-directory: 自动上传
       - run: python -m compileall -q API投稿2.0/app 自动上传/src 投稿中心.py center_startup.py daily_restart.py shared_feishu.py release_safety.py
