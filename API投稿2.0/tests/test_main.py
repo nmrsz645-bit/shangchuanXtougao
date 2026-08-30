@@ -12,7 +12,7 @@ class MainTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             exe = Path(temp) / "API投稿2.0.exe"
             with patch.object(sys, "frozen", True, create=True), patch.object(sys, "executable", str(exe)):
-                self.assertEqual(exe.parent, default_base_dir())
+                self.assertEqual(exe.parent.resolve(), default_base_dir())
 
 
 if __name__ == "__main__":
