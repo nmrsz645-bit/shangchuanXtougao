@@ -11,7 +11,7 @@
 - `E:\自动化\api投稿2.0`
 - `E:\自动化\自动上传\程序`
 
-源码远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`，分支 `main`。本次交接复核时远程 `main` 为 `2c966a2b9d936ae4f22547fe596133aa34d835aa`（`完善项目暂停交接说明`）。接手时必须重新核对，不以这里的提交号代替实时状态。
+源码远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`，分支 `main`。接手时必须重新执行 `git pull --ff-only`、`git status --short` 与 `git log -1 --oneline` 核对实时状态；不以本文中的历史提交号代替实时状态。
 
 ## 下一步：第一条可直接执行的操作
 
@@ -35,7 +35,7 @@ Set-Location 'E:\自动化'
 git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
 ```
 
-首次在新电脑运行离线测试前，按 `README.md` 创建 `.venv` 后只需执行一次：
+首次在新电脑运行离线测试前，使用 Python 3.12 或更高版本按 `README.md` 创建 `.venv` 后只需执行一次：
 
 ```powershell
 .\.venv\Scripts\python -m pip install -r requirements-dev.txt
@@ -48,8 +48,9 @@ git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
 - 7×24 基础能力已实现：单实例锁、Windows 启动/异常退出重启、可选自动启动任务，以及每天 00:00（或错过后补做）检查并启动已停止任务。
 - 投稿方案“自动代理”按每个方案独立运行：每天先使用 40；方案内所有项目当天均达 40 后切换为 83；次日回到 40；关闭时保留当时 40/83。
 - 已新增 API 投稿“当前小程序 App ID（留空使用旧规则）”设置。它保存在本机 `API投稿2.0\config\settings.json`；同一电脑的投稿项目共用该值。填写时同时影响模板匹配、两种既有程序链接格式和生成的 `sslocal` 链接；留空继续原规则。
-- 本次源码验证已通过：发布安全 7 项、根目录 7 项、API 投稿 67 项、视频上传 62 项，共 143 项；`compileall` 通过。新增的完整流程测试全程使用临时 SQLite 与模拟飞书/巨量接口，不会真实投稿或上传。
-- 新电脑源码初始化已补齐 `requirements-dev.txt` 与虚拟环境命令；实际视频上传必须安装正式版 Google Chrome，不能把 Playwright 自带 Chromium 当作替代品。GitHub Actions 的 `.github/workflows/offline-tests.yml` 会在 Windows 与 Ubuntu 的每次推送和拉取请求时自动运行离线测试与语法检查。
+- 本次源码验证已通过：发布安全 7 项、根目录 9 项、API 投稿 67 项、视频上传 62 项，共 145 项；`compileall` 通过。新增的完整流程测试全程使用临时 SQLite 与模拟飞书/巨量接口，不会真实投稿或上传。
+- 新电脑源码初始化已补齐 `requirements-dev.txt` 与虚拟环境命令；实际视频上传必须安装正式版 Google Chrome，不能把 Playwright 自带 Chromium 当作替代品。GitHub Actions 的 `.github/workflows/offline-tests.yml` 会在每次推送和拉取请求时自动运行离线测试与语法检查。
+- 源码入口 `启动投稿中心.vbs` 会优先使用项目 `.venv`；首次启用每日守护或跨日首次启动，会立即补做一次“停止则重启”检查，之后每 10 秒检查日期是否变化。
 - Git 已包含源码、测试和交接文档：`6aabf98` 提交 App ID 功能与初版交接，`2d46cc7` 提交离线流程测试、私有数据保护测试、README、AGENTS 与本交接文件。
 - “上传 + 投稿中心”线上正式版本已发布为 **1.0.2**。更新包：`https://luotuoruanjiangengx.oss-cn-beijing.aliyuncs.com/updates/shang-chuan-tou-gao-zhong-xin/1.0.2/app.zip`，SHA-256：`95C284D9380935B7A935632C0A62C94F7C05BC7FA92432E8CC2509187D3DBE82`。完整包：`https://luotuoruanjiangengx.oss-cn-beijing.aliyuncs.com/packages/shang-chuan-tou-gao-zhong-xin-1.0.2.zip`，SHA-256：`1F764A1CBD7E7079F084A5EA7A7FE739313D546538AAA787F85E1A971F914434`。
 - 1.0.2 发布已完成旧 1.0.0 客户端隔离升级验证：生成 `app.previous`，11 项受保护数据逐字节不变，更新包递归检查为 1,209 个程序文件且不含用户数据、配置、日志或队列；主清单、旧客户端兼容清单和两个下载目录均已公网回读为 1.0.2。
@@ -113,7 +114,7 @@ python -m compileall -q API投稿2.0\app 自动上传\src 投稿中心.py center
 - `worker_error: invalid param` 通常来自飞书租户 Token/飞书设置，不应靠修改投稿逻辑猜测修复。
 - `没有与该程序链接兼容的项目模板` 表示当前项目模板的 App ID 与投稿链接/已填写的本机 App ID 不一致，或模板不再可用；先检查授权页的 App ID 与巨量模板，勿直接改模板筛选逻辑。
 - 线上更新包已经 1.0.2，但“服务器发布”不是对未运行客户端的主动通知；客户端需从安装根目录 `Start.cmd` 进入更新检查。
-- 新电脑接手源码时先按 `README.md` 创建 `.venv`、安装 `requirements-dev.txt` 与 `自动上传[dev]`；需要真实 Chrome 上传时再安装 Playwright Chromium。用户电脑运行打包程序不需要这些开发依赖。
+- 新电脑接手源码时先按 `README.md` 创建 `.venv`、安装 `requirements-dev.txt`（其中已包含 `自动上传[dev]`）；需要真实 Chrome 上传时安装正式版 Google Chrome。用户电脑运行打包程序不需要这些开发依赖。
 
 ## 严禁误动、误传、误提交的数据和配置
 

@@ -25,6 +25,8 @@ python -m venv .venv
 
 实际视频上传必须安装正式版 Google Chrome；程序会直接启动它，**不需要**下载 Playwright 自带的 Chromium。
 
+源码目录中的 `启动投稿中心.vbs` 会优先使用 `.venv` 的 Python；完成以上安装后可直接双击启动。若 `.venv` 不存在，才回退使用系统 `pythonw.exe`。
+
 新电脑必须重新填写飞书/巨量授权并登录 Chrome；不要把另一台电脑的 `共享飞书设置.json`、`个人数据`、`API投稿2.0\config/data/logs` 或 Chrome 数据提交到 Git。
 
 ## 本地数据规则

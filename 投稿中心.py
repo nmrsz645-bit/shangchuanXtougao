@@ -127,10 +127,7 @@ def main() -> None:
                 push_alert("凌晨检查已自动启动：" + "、".join(restarted))
         root.after(10_000, daily_restart_check)
 
-    if settings.daily_restart_enabled and not settings.last_daily_restart_check:
-        settings.last_daily_restart_check = date.today().isoformat()
-        save(config_path, settings)
-    root.after(10_000, daily_restart_check)
+    root.after(0, daily_restart_check)
 
     if settings.start_tasks_automatically:
         root.after(1200, start_workers)

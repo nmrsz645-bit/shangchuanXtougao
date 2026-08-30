@@ -29,12 +29,15 @@ def test_api_publish_exclude_keeps_runtime_data_out_of_update_packages():
 def test_handoff_documents_include_reproducible_local_test_setup():
     requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    timeoff = (ROOT / "TIMEOFF.md").read_text(encoding="utf-8")
     assert "pytest" in requirements
     assert "-e ./自动上传[dev]" in requirements
     assert "git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git" in readme
     assert "requirements-dev.txt" in readme
     assert "Google Chrome" in readme
     assert "playwright install chromium" not in readme
+    assert "正式版 Google Chrome" in timeoff
+    assert "安装 Playwright Chromium" not in timeoff
 
 
 def test_handoff_ci_covers_windows_without_business_credentials():
