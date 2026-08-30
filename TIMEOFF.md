@@ -13,6 +13,14 @@
 
 源码远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`，分支 `main`。接手时必须重新执行 `git pull --ff-only`、`git status --short` 与 `git log -1 --oneline` 核对实时状态；不以本文中的历史提交号代替实时状态。
 
+## 2026-08-31 交接核验补记
+
+- 本次交接时，`main` 与 `origin/main` 同步在 `9c99312fa339be1d8ef694acd548a4a15787c772`，两边工作区均为干净状态。该提交仅完善可直接执行的交接验证命令；不要假定后续仍是此提交，仍须先执行下一节的第一条命令。
+- 已用全新、无用户数据的 Git 克隆按本文命令复验：根目录测试 16 项、API 投稿测试 67 项、视频上传测试 62 项，合计 145 项通过；`compileall` 通过；克隆目录 `git status --porcelain` 为空。
+- GitHub Actions 已在 `ubuntu-latest` 与 `windows-latest` 两个平台完成同一离线验证。工作流已使用 `actions/checkout@v5` 与 `actions/setup-python@v6`（Node 24 运行时），避免旧 Node 20 运行时弃用告警。
+- 交接文档的职责固定如下：`README.md` 是安装、使用和新电脑初始化说明；`AGENTS.md` 是不可越过的操作边界；本文件是当前暂停点、实测证据、下一步和保护清单。接手者必须依次阅读三份文件，不需要阅读历史聊天。
+- 当前没有待发布或获授权的程序改动。不要因本次 Git/CI 交接核验擅自构建 EXE、运行真实上传/投稿、修改线上清单或发布更新。
+
 ## 下一步：第一条可直接执行的操作
 
 在已有项目目录的 PowerShell 中执行以下命令；它只读取 Git 与交接状态，不启动业务程序：
