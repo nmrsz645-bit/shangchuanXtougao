@@ -7,7 +7,7 @@
 - `E:\自动化\api投稿2.0`
 - `E:\自动化\自动上传\程序`
 
-当前已完成一项本地验证过的投稿兼容性改动：可在 API 投稿的“授权”页面填写一台电脑共用的“当前小程序 App ID”。该值会用于匹配巨量项目模板和投稿请求；留空时保持原有两种程序链接的 App ID 规则。用户已完成本地实际测试并确认可用，更新程序任务已获授权按既有安全流程处理在线更新；在其交付完整验证结果前，不得自行宣称线上发布完成。
+当前已完成一项本地验证过的投稿兼容性改动：可在 API 投稿的“授权”页面填写一台电脑共用的“当前小程序 App ID”。该值会用于匹配巨量项目模板和投稿请求；留空时保持原有两种程序链接的 App ID 规则。用户已完成本地实际测试并确认可用，更新程序任务已获授权按既有安全流程处理在线更新；在其交付完整验证结果前，不得自行宣称线上发布完成。本仓库现有离线自动化测试覆盖投稿成功/无兼容模板重试，以及源码交接的私有数据忽略规则。
 
 ## 下一步：第一条可直接执行的操作
 
@@ -35,7 +35,8 @@ git status --short
 - 投稿方案“自动代理”：按**每个方案**独立工作；勾选后每日先用 40，方案内每个项目当天已占用都达到 40 时统一改为 83；次日回到 40。关闭后保留当时的 40/83。新增项目遵循该方案当日阶段。
 - 自动代理的历史验证：根目录测试 4 项、API 投稿 63 项、视频上传 62 项，共 129 项通过；`compileall`、Tk 窗口冒烟启动、冻结 EXE 启动冒烟均已在当时环境通过。
 - 本次小程序 App ID 功能：授权页新增“当前小程序 App ID（留空使用旧规则）”输入框，保存在既有 `API投稿2.0\\config\\settings.json` 的设置中；同机项目共用该值。程序链接中的启动页、参数、书籍链接生成逻辑没有改变。设置为空时，仍按原有两种链接格式选择旧 App ID。
-- 本次源码验证：API 投稿测试 `65 passed`、根目录测试 `4 passed`、`python -m compileall -q API投稿2.0\\app` 通过；本地候选 EXE 启动烟测通过，用户已完成实际本地投稿测试并确认正常。
+- 本次源码验证：根目录测试 `6 passed`、API 投稿测试 `67 passed`、视频上传测试 `62 passed`，共 `135 passed`；`python -m compileall -q API投稿2.0\\app 自动上传\\src 投稿中心.py center_startup.py daily_restart.py shared_feishu.py` 通过。本地候选 EXE 启动烟测通过，用户已完成实际本地投稿测试并确认正常。
+- 新增离线回归测试：`API投稿2.0\\tests\\test_run_once_integration.py` 用临时 SQLite 与模拟飞书/巨量接口覆盖“配置 App ID 后投稿成功”和“无兼容模板后释放任务等待重试”；`test_handoff_safety.py` 校验 Git 忽略规则与 API 更新包排除 `config`、`data`、`logs`。这不是实际线上升级验收。
 - 本地测试候选包：`候选发布-20260829-小程序AppID-本地测试\\上传投稿中心\\上传投稿中心.exe`，SHA-256 为 `07ED06FFF2A684CAA7C2B32E56D71D6D267BB9EBD30314BA705197C2F819B99B`。它仅作本次经测试的程序候选来源；其中的运行配置/数据仍属私有数据，不能提交 Git。
 - 本地发布版曾以仅替换 `上传投稿中心.exe` 和 `_internal` 的方式安全更新；当时确认 1,163 个运行文件一致，用户数据未变，并保留了 `program.previous-20260819222728` 回滚副本。
 - 曾完成 1.0.1 在线更新发布和旧客户端隔离升级验证；若后续涉及在线更新，必须重新读取公开清单、下载包哈希、隔离升级和数据保留结果后才能声明成功。
@@ -61,6 +62,8 @@ git status --short
 | API 投稿设置持久化 | `API投稿2.0\app\desktop_posting\settings.py` |
 | 投稿 SQLite 存储 | `API投稿2.0\app\desktop_posting\storage.py` |
 | API 投稿测试 | `API投稿2.0\tests\` |
+| 投稿完整流程离线回归测试 | `API投稿2.0\tests\test_run_once_integration.py` |
+| 源码交接私有数据保护测试 | `test_handoff_safety.py` |
 | 视频上传源码与测试 | `自动上传\src\video_feishu\`、`自动上传\tests\` |
 | 视频上传依赖声明 | `自动上传\pyproject.toml` |
 | 正式本地发布版 | `发布版\上传投稿中心\上传投稿中心.exe` |
@@ -74,8 +77,8 @@ git status --short
 ```powershell
 Set-Location 'E:\自动化\上传+投稿'
 
-# 根目录的集成启动与共享设置测试
-python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py -q
+# 根目录的集成启动、共享设置与源码交接保护测试
+python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py -q
 
 # API 投稿模块测试（必须让 app 包可被导入）
 $env:PYTHONPATH = 'E:\自动化\上传+投稿\API投稿2.0\app'
