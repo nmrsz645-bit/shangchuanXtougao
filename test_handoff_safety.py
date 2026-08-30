@@ -30,6 +30,8 @@ def test_handoff_documents_include_reproducible_local_test_setup():
     requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "pytest" in requirements
+    assert "-e ./自动上传[dev]" in requirements
     assert "git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git" in readme
     assert "requirements-dev.txt" in readme
-    assert "playwright install chromium" in readme
+    assert "Google Chrome" in readme
+    assert "playwright install chromium" not in readme

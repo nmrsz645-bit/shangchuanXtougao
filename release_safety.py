@@ -28,6 +28,7 @@ PROTECTED_PATHS = (
     "API投稿2.0/config/",
     "API投稿2.0/data/",
     "API投稿2.0/logs/",
+    "自动上传/个人数据/",
     "tokens/",
     "Chrome/",
     "queue/",
@@ -35,6 +36,7 @@ PROTECTED_PATHS = (
     "state.db",
     "state.db-wal",
     "state.db-shm",
+    "program.previous-",
 )
 
 
@@ -87,7 +89,7 @@ def validate_release_archive(archive_path: Path, expected_version: str | None = 
             raise ValueError(f"archive version {version} does not match expected {expected_version}")
 
 
-def validate_manifest(manifest_path: Path, required_files: tuple[str, ...] = REQUIRED_APP_FILES) -> None:
+def validate_manifest(manifest_path: Path, required_files: tuple[str, ...] = REQUIRED_APP_FILES) -> dict:
     """Check that a manifest is usable by old clients before it is activated."""
     manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
     if not isinstance(manifest.get("version"), str) or not manifest["version"]:
@@ -106,6 +108,7 @@ def validate_manifest(manifest_path: Path, required_files: tuple[str, ...] = REQ
     invalid = sorted(path for path in required_files if not isinstance(files[path], str) or not SHA256_RE.fullmatch(files[path]))
     if invalid:
         raise ValueError(f"manifest has invalid file hashes: {', '.join(invalid)}")
+    return manifest
 
 
 def validate_update_entrypoint(start_script: Path) -> None:
@@ -119,7 +122,9 @@ def validate_update_entrypoint(start_script: Path) -> None:
 
 def validate_release(app_zip: Path, manifest: Path, start_script: Path, expected_version: str | None) -> None:
     validate_release_archive(app_zip, expected_version)
-    validate_manifest(manifest)
+    metadata = validate_manifest(manifest)
+    if sha256_file(app_zip).lower() != metadata["sha256"].lower():
+        raise ValueError("manifest SHA-256 does not match release archive")
     validate_update_entrypoint(start_script)
 
 

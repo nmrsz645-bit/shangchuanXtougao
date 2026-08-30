@@ -1,3 +1,4 @@
-# Root integration/API test runner.  The video-upload module declares its
-# runtime and development dependencies in 自动上传/pyproject.toml.
+# Root integration/API test runner plus the video-upload module and its
+# development dependencies.
 pytest>=8,<9
+-e ./自动上传[dev]

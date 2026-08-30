@@ -35,6 +35,12 @@ Set-Location 'E:\自动化'
 git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
 ```
 
+首次在新电脑运行离线测试前，按 `README.md` 创建 `.venv` 后只需执行一次：
+
+```powershell
+.\.venv\Scripts\python -m pip install -r requirements-dev.txt
+```
+
 ## 已完成并验证的内容
 
 - 已完成单窗口整合入口：`投稿中心.py` 加载飞书设置、API 投稿和视频上传；`启动投稿中心.vbs` 可隐藏命令行启动，`.bat` 保留兼容入口。
@@ -42,7 +48,8 @@ git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
 - 7×24 基础能力已实现：单实例锁、Windows 启动/异常退出重启、可选自动启动任务，以及每天 00:00（或错过后补做）检查并启动已停止任务。
 - 投稿方案“自动代理”按每个方案独立运行：每天先使用 40；方案内所有项目当天均达 40 后切换为 83；次日回到 40；关闭时保留当时 40/83。
 - 已新增 API 投稿“当前小程序 App ID（留空使用旧规则）”设置。它保存在本机 `API投稿2.0\config\settings.json`；同一电脑的投稿项目共用该值。填写时同时影响模板匹配、两种既有程序链接格式和生成的 `sslocal` 链接；留空继续原规则。
-- 本次源码验证已通过：根目录 6 项、API 投稿 67 项、视频上传 62 项，共 135 项；`compileall` 通过。新增的完整流程测试全程使用临时 SQLite 与模拟飞书/巨量接口，不会真实投稿或上传。
+- 本次源码验证已通过：发布安全 7 项、根目录 7 项、API 投稿 67 项、视频上传 62 项，共 143 项；`compileall` 通过。新增的完整流程测试全程使用临时 SQLite 与模拟飞书/巨量接口，不会真实投稿或上传。
+- 新电脑源码初始化已补齐 `requirements-dev.txt` 与虚拟环境命令；实际视频上传必须安装正式版 Google Chrome，不能把 Playwright 自带 Chromium 当作替代品。GitHub Actions 的 `.github/workflows/offline-tests.yml` 会在每次推送和拉取请求时自动运行离线测试与语法检查。
 - Git 已包含源码、测试和交接文档：`6aabf98` 提交 App ID 功能与初版交接，`2d46cc7` 提交离线流程测试、私有数据保护测试、README、AGENTS 与本交接文件。
 - “上传 + 投稿中心”线上正式版本已发布为 **1.0.2**。更新包：`https://luotuoruanjiangengx.oss-cn-beijing.aliyuncs.com/updates/shang-chuan-tou-gao-zhong-xin/1.0.2/app.zip`，SHA-256：`95C284D9380935B7A935632C0A62C94F7C05BC7FA92432E8CC2509187D3DBE82`。完整包：`https://luotuoruanjiangengx.oss-cn-beijing.aliyuncs.com/packages/shang-chuan-tou-gao-zhong-xin-1.0.2.zip`，SHA-256：`1F764A1CBD7E7079F084A5EA7A7FE739313D546538AAA787F85E1A971F914434`。
 - 1.0.2 发布已完成旧 1.0.0 客户端隔离升级验证：生成 `app.previous`，11 项受保护数据逐字节不变，更新包递归检查为 1,209 个程序文件且不含用户数据、配置、日志或队列；主清单、旧客户端兼容清单和两个下载目录均已公网回读为 1.0.2。
@@ -70,6 +77,8 @@ git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
 | API 设置与状态数据库实现 | `API投稿2.0\app\desktop_posting\settings.py`、`storage.py` |
 | API 离线完整流程测试 | `API投稿2.0\tests\test_run_once_integration.py` |
 | 交接私有数据保护测试 | `test_handoff_safety.py` |
+| 发布候选安全检查与测试 | `release_safety.py`、`test_release_safety.py` |
+| GitHub 自动离线验证 | `.github\workflows\offline-tests.yml` |
 | 视频上传源码与测试 | `自动上传\src\video_feishu\`、`自动上传\tests\` |
 | 正式本地发布版 | `发布版\上传投稿中心\上传投稿中心.exe` |
 | 本次本地测试候选（仅历史证据） | `候选发布-20260829-小程序AppID-本地测试\上传投稿中心\上传投稿中心.exe` |

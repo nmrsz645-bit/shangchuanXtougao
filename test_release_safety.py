@@ -5,20 +5,20 @@ from pathlib import Path
 
 import pytest
 
-from release_safety import REQUIRED_APP_FILES, validate_manifest, validate_release_archive, validate_update_entrypoint
+from release_safety import REQUIRED_APP_FILES, sha256_file, validate_manifest, validate_release, validate_release_archive, validate_update_entrypoint
 
 
 HASH = "a" * 64
 
 
-def write_release_zip(path: Path, *, protected=False, omit=()):
+def write_release_zip(path: Path, *, protected_path="", omit=()):
     with zipfile.ZipFile(path, "w") as archive:
         for name in REQUIRED_APP_FILES:
             if name not in omit:
                 content = json.dumps({"version": "1.0.2"}) if name == "version.json" else "program"
                 archive.writestr(name, content)
-        if protected:
-            archive.writestr("个人数据/keep.txt", "must never be published")
+        if protected_path:
+            archive.writestr(protected_path, "must never be published")
 
 
 def write_manifest(path: Path, *, omit=()):
@@ -54,7 +54,7 @@ def test_release_archive_rejects_missing_version_file():
 def test_release_archive_rejects_user_data():
     with tempfile.TemporaryDirectory() as temp:
         archive = Path(temp) / "app.zip"
-        write_release_zip(archive, protected=True)
+        write_release_zip(archive, protected_path="自动上传/个人数据/Chrome/Cookies")
         with pytest.raises(ValueError, match="protected user data"):
             validate_release_archive(archive)
 
@@ -79,3 +79,24 @@ def test_root_start_script_must_offer_the_update_entrypoint():
             encoding="utf-8",
         )
         validate_update_entrypoint(start)
+
+
+def test_full_release_requires_manifest_hash_for_the_same_archive():
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        archive = root / "app.zip"
+        manifest = root / "latest.json"
+        start = root / "Start.cmd"
+        write_release_zip(archive)
+        write_manifest(manifest)
+        start.write_text(
+            '@echo off\r\n"updater\\UpdateAgent.exe" --check "updater-config.json"\r\ncall "app\\Start-App.cmd"\r\n',
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match="does not match release archive"):
+            validate_release(archive, manifest, start, "1.0.2")
+
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        data["sha256"] = sha256_file(archive)
+        manifest.write_text(json.dumps(data), encoding="utf-8")
+        validate_release(archive, manifest, start, "1.0.2")

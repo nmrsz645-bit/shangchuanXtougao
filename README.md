@@ -21,14 +21,9 @@ Set-Location '.\上传+投稿'
 python -m venv .venv
 .\.venv\Scripts\python -m pip install --upgrade pip
 .\.venv\Scripts\python -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python -m pip install -e '.\自动上传[dev]'
 ```
 
-只有需要实际使用 Chrome 上传时，才额外执行：
-
-```powershell
-.\.venv\Scripts\playwright install chromium
-```
+实际视频上传必须安装正式版 Google Chrome；程序会直接启动它，**不需要**下载 Playwright 自带的 Chromium。
 
 新电脑必须重新填写飞书/巨量授权并登录 Chrome；不要把另一台电脑的 `共享飞书设置.json`、`个人数据`、`API投稿2.0\config/data/logs` 或 Chrome 数据提交到 Git。
 
