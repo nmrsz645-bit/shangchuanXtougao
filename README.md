@@ -9,6 +9,29 @@ API 投稿的“授权”页可填写一台电脑共用的“当前小程序 App
 
 本项目是两个原程序的本地副本。原程序目录没有被修改。
 
+## 新电脑接手源码
+
+普通用户请下载已打包的完整程序；以下步骤只供开发/维护电脑使用。需要 Windows、Git 和 Python 3.12。
+
+```powershell
+Set-Location 'E:\自动化'
+git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
+Set-Location '.\上传+投稿'
+
+python -m venv .venv
+.\.venv\Scripts\python -m pip install --upgrade pip
+.\.venv\Scripts\python -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python -m pip install -e '.\自动上传[dev]'
+```
+
+只有需要实际使用 Chrome 上传时，才额外执行：
+
+```powershell
+.\.venv\Scripts\playwright install chromium
+```
+
+新电脑必须重新填写飞书/巨量授权并登录 Chrome；不要把另一台电脑的 `共享飞书设置.json`、`个人数据`、`API投稿2.0\config/data/logs` 或 Chrome 数据提交到 Git。
+
 ## 本地数据规则
 
 - API 投稿运行后会在 `API投稿2.0\config`、`API投稿2.0\data`、`API投稿2.0\logs` 保存本机数据。
@@ -21,10 +44,21 @@ API 投稿的“授权”页可填写一台电脑共用的“当前小程序 App
 
 ```powershell
 Set-Location 'E:\自动化\上传+投稿'
-python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py -q
+.\.venv\Scripts\python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py -q
 
 $env:PYTHONPATH = 'E:\自动化\上传+投稿\API投稿2.0\app'
-python -m pytest API投稿2.0\tests -q
+.\.venv\Scripts\python -m pytest API投稿2.0\tests -q
+
+Set-Location 'E:\自动化\上传+投稿\自动上传'
+..\.venv\Scripts\python -m pytest -q
 ```
 
 测试使用模拟的飞书和巨量接口，不会真实投稿、上传、打开 Chrome 或触发在线更新。更新器实际升级后的数据保留，仍须由更新程序在隔离环境中验证。
+
+发布前还应对**干净的候选更新包**运行离线检查，避免缺少版本文件、根启动入口没有更新检查，或用户数据误被打包：
+
+```powershell
+python release_safety.py --app-zip <app.zip> --manifest <latest.json> --start-script <Start.cmd> --version <版本号>
+```
+
+该检查只针对将要上传的干净候选目录；不要对客户已安装目录运行，客户目录中的个人数据本来就必须保留。

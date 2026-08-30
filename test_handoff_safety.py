@@ -24,3 +24,12 @@ def test_private_runtime_paths_stay_ignored_by_git():
 def test_api_publish_exclude_keeps_runtime_data_out_of_update_packages():
     excluded = set((ROOT / "API投稿2.0" / ".publish-exclude.txt").read_text(encoding="utf-8").splitlines())
     assert {"config", "data", "logs"}.issubset(excluded)
+
+
+def test_handoff_documents_include_reproducible_local_test_setup():
+    requirements = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "pytest" in requirements
+    assert "git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git" in readme
+    assert "requirements-dev.txt" in readme
+    assert "playwright install chromium" in readme

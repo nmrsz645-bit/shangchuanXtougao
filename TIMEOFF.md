@@ -11,7 +11,7 @@
 - `E:\自动化\api投稿2.0`
 - `E:\自动化\自动上传\程序`
 
-源码远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`，分支 `main`。本交接写入时的已推送提交是 `2d46cc7ee42d501578f4b30c009e0628c8513338`（`补充离线流程与交接保护测试`）。接手时必须重新核对，不以这里的提交号代替实时状态。
+源码远程仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao.git`，分支 `main`。本次交接复核时远程 `main` 为 `2c966a2b9d936ae4f22547fe596133aa34d835aa`（`完善项目暂停交接说明`）。接手时必须重新核对，不以这里的提交号代替实时状态。
 
 ## 下一步：第一条可直接执行的操作
 
@@ -25,6 +25,7 @@ git log -1 --oneline
 Get-Content .\README.md
 Get-Content .\AGENTS.md
 Get-Content .\TIMEOFF.md
+Get-Content .\requirements-dev.txt
 ```
 
 若新电脑还没有源码，先执行：
@@ -80,8 +81,8 @@ git clone https://github.com/nmrsz645-bit/shangchuanXtougao.git 上传+投稿
 ```powershell
 Set-Location 'E:\自动化\上传+投稿'
 
-# 根目录集成、共享设置、Git 私有数据保护
-python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py -q
+# 根目录集成、共享设置、Git 私有数据保护、发布候选安全检查
+python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py -q
 
 # API 投稿：让 app 包可导入，再运行全部离线测试
 $env:PYTHONPATH = 'E:\自动化\上传+投稿\API投稿2.0\app'
@@ -103,6 +104,7 @@ python -m compileall -q API投稿2.0\app 自动上传\src 投稿中心.py center
 - `worker_error: invalid param` 通常来自飞书租户 Token/飞书设置，不应靠修改投稿逻辑猜测修复。
 - `没有与该程序链接兼容的项目模板` 表示当前项目模板的 App ID 与投稿链接/已填写的本机 App ID 不一致，或模板不再可用；先检查授权页的 App ID 与巨量模板，勿直接改模板筛选逻辑。
 - 线上更新包已经 1.0.2，但“服务器发布”不是对未运行客户端的主动通知；客户端需从安装根目录 `Start.cmd` 进入更新检查。
+- 新电脑接手源码时先按 `README.md` 创建 `.venv`、安装 `requirements-dev.txt` 与 `自动上传[dev]`；需要真实 Chrome 上传时再安装 Playwright Chromium。用户电脑运行打包程序不需要这些开发依赖。
 
 ## 严禁误动、误传、误提交的数据和配置
 
