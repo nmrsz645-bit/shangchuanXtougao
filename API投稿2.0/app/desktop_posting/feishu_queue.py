@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime, timedelta
 
 REQUIRED_HEADERS = ("书名", "标签", "启动页", "程序链接", "领取状态", "领取电脑", "领取时间", "领取批次号", "领取过期时间", "投稿状态")
+UNCLAIMED_STATUSES = {"", "None", "等待领取"}
 
 
 def validate_headers(headers):
@@ -17,7 +18,7 @@ def find_claimable_row(headers, rows, book_name=None, can_claim=None):
             continue
         if not values.get("书名") or (book_name and values.get("书名") != book_name) or values.get("投稿状态") == "已投稿" or values.get("领取状态") == "彻底失败":
             continue
-        if not values.get("领取状态") or _claim_expired(values.get("领取过期时间", "")):
+        if values.get("领取状态") in UNCLAIMED_STATUSES or _claim_expired(values.get("领取过期时间", "")):
             return {"row_number": index, "values": values}
     return None
 

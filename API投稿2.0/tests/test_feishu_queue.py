@@ -30,6 +30,13 @@ class FeishuQueueTests(unittest.TestCase):
         from desktop_posting.feishu_queue import find_claimable_row
         self.assertEqual(2, find_claimable_row(["书名", "领取状态"], [["书A", None]])["row_number"])
 
+    def test_text_none_and_waiting_to_claim_are_treated_as_unclaimed(self):
+        from desktop_posting.feishu_queue import find_claimable_row
+
+        headers = ["书名", "领取状态"]
+        self.assertEqual(2, find_claimable_row(headers, [["书A", "None"]])["row_number"])
+        self.assertEqual(2, find_claimable_row(headers, [["书A", "等待领取"]])["row_number"])
+
     def test_claim_filter_skips_task_owned_by_another_plan(self):
         from desktop_posting.feishu_queue import find_claimable_row
 

@@ -5,14 +5,21 @@ from urllib.parse import parse_qsl, quote
 
 DEFAULT_APP_ID = "tt8a56fceb1563152001"
 BOOK_ID_STYLE_APP_ID = "tte3a3951e7c939c7701"
+REQUEST_ID_NOVEL_APP_ID = "tte7d5916878db30f001"
 CHECKSUM_SALT = "bytetimordance"
 
 
 def choose_app_id(start_param, configured_app_id=""):
+    query = dict(parse_qsl(str(start_param or ""), keep_blank_values=True))
+    # The current novel-plugin link family uses a request placeholder plus
+    # bbid/bcid identifiers.  It has its own mini-program identity; a
+    # previously saved global App ID belongs to older link families and must
+    # not replace it, otherwise Qianchuan rejects the generated link.
+    if {"req_id", "bbid", "bcid", "book_id"}.issubset(query):
+        return REQUEST_ID_NOVEL_APP_ID
     configured_app_id = str(configured_app_id or "").strip()
     if configured_app_id:
         return configured_app_id
-    query = dict(parse_qsl(str(start_param or ""), keep_blank_values=True))
     if "bookId" in query:
         return BOOK_ID_STYLE_APP_ID
     return DEFAULT_APP_ID

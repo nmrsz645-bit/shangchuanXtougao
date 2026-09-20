@@ -74,6 +74,42 @@ class PostingServiceTests(unittest.TestCase):
         for program_link, start_page in cases:
             self.assertEqual(expected, parse_program_fields(program_link, start_page))
 
+    def test_program_link_accepts_req_id_parameters_in_a_separate_column(self):
+        from desktop_posting.posting_service import parse_program_fields
+
+        params = (
+            "req_id=__REQUEST_ID__&bbid=356313347266072576&bcid=356313347266072577&"
+            "book_id=r7683777708358322442&chapter_id=1&fromType=101&micro_pannel_id=934&linkid=11330916"
+        )
+        self.assertEqual(
+            ("pages/novel_plugin/index", params),
+            parse_program_fields(params, "pages/novel_plugin/index"),
+        )
+
+    def test_req_id_column_layout_generates_the_verified_microapp_link(self):
+        from desktop_posting.microapp_link import generate
+        from desktop_posting.posting_service import parse_program_fields
+
+        params = (
+            "req_id=__REQUEST_ID__&bbid=356313347266072576&bcid=356313347266072577&"
+            "book_id=r7683777708358322442&chapter_id=1&fromType=101&micro_pannel_id=934&linkid=11330916"
+        )
+        path, parsed_params = parse_program_fields(params, "pages/novel_plugin/index")
+        self.assertEqual(
+            "sslocal://microapp?app_id=tte7d5916878db30f001&bdp_log=%7B%22launch_from%22%3A%22ad%22%7D&"
+            "scene=0&start_page=pages%2Fnovel_plugin%2Findex%3Fbbid%3D356313347266072576%26"
+            "bcid%3D356313347266072577%26book_id%3Dr7683777708358322442%26chapter_id%3D1%26"
+            "fromType%3D101%26linkid%3D11330916%26micro_pannel_id%3D934%26req_id%3D__REQUEST_ID__&"
+            "version=v2&version_type=current&bdpsum=e67eeb2",
+            generate(path, parsed_params),
+        )
+
+    def test_req_id_novel_link_uses_its_app_id_despite_an_old_global_setting(self):
+        from desktop_posting.microapp_link import choose_app_id
+
+        params = "req_id=__REQUEST_ID__&bbid=1&bcid=2&book_id=r3&chapter_id=1"
+        self.assertEqual("tte7d5916878db30f001", choose_app_id(params, "tt8a56fceb1563152001"))
+
     def test_book_id_style_uses_default_mini_app(self):
         from desktop_posting.microapp_link import choose_app_id
 
