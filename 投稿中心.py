@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -16,6 +17,14 @@ from center_startup import set_enabled
 from daily_restart import needs_daily_check
 
 
+def app_version(base_dir=ROOT) -> str:
+    try:
+        payload = json.loads((Path(base_dir) / "API投稿2.0" / "version.json").read_text(encoding="utf-8"))
+        return str(payload["version"]).strip()
+    except (OSError, ValueError, KeyError, TypeError):
+        return "未知"
+
+
 def main() -> None:
     instance_lock = acquire_instance_lock(ROOT)
     if not instance_lock:
@@ -25,7 +34,7 @@ def main() -> None:
         notice.destroy()
         return
     root = tk.Tk()
-    root.title("上传 + 投稿中心（本地版）")
+    root.title(f"上传 + 投稿中心 v{app_version()}（本地版）")
     root.geometry("1120x760")
 
     api_dir = ROOT / "API投稿2.0"

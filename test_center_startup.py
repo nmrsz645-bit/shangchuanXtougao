@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from center_startup import is_enabled, set_enabled
+from 投稿中心 import app_version
 
 
 ROOT = Path(__file__).resolve().parent
@@ -21,3 +22,7 @@ def test_source_launcher_prefers_the_project_virtual_environment():
     launcher = (ROOT / "启动投稿中心.vbs").read_text(encoding="utf-8")
 
     assert ".venv\\Scripts\\pythonw.exe" in launcher
+
+
+def test_center_title_reads_the_local_version_file():
+    assert app_version(ROOT) == "1.0.13"
