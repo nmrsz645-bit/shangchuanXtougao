@@ -6,7 +6,7 @@ v1.0.14 已经公开，但客户截图证明其完整包根启动器仍不能可
 
 **v1.0.15 已完成发布。** 不得覆盖或删除任何既有版本、配置、日志、数据、客户目录或回滚目录。
 
-## 2026-09-20 v1.0.16：CMD 启动器编码修复（本地已验证，尚未发布）
+## 2026-09-20 v1.0.16：CMD 启动器编码修复（已发布并完成公网验收）
 
 - 客户从网站下载的 `1.0.14` 外层目录经应用更新后，`app\version.json` 已为 `1.0.15`，但 `Start-App.cmd` 是 **UTF-8 无 BOM**，并直接写入中文 EXE 名。
 - Windows `cmd.exe` 按 GBK 解读该脚本时，将 `上传投稿中心.exe` 解析为 `涓婁紶鎶曠涓績.exe`，与客户截图中的乱码缺失路径一致。这是发布包编码问题，不是客户安装或数据问题。
@@ -27,7 +27,7 @@ C:\Users\Administrator\Documents\ChatGPT\更新 2\release-candidates\shangchuan-
 | `latest.json` | `21d08e644d282073d7ca0cf4415c2b3d72b866f23d31c036115b06e483621ae0` | 两个清单位置（见下） |
 | `latest.js` | `52605cb12b6fc2d1c0288d406b2d8fa98fa011f5e1051682c1bfd954275a10b7` | `updates/shang-chuan-tou-gao-zhong-xin/latest.js` |
 
-**发布状态：未上传 1.0.16 ZIP，线上两份 `latest.json`、`latest.js` 和下载站仍必须保持 1.0.15。** 本机已登录 OSS 控制台，但本次浏览器自动化无法触发文件选择器；恢复上传时必须先上传两个 ZIP 并从公网校验 SHA-256，再最后覆盖两份 JSON 和 `latest.js`，最后才更新下载站链接。
+**发布状态：已完成。** 先上传两个 ZIP 并从公网校验 SHA-256，再上传两份 `latest.json` 与 `latest.js`，最后更新下载站链接；旧版本、配置、数据、日志和候选目录均未覆盖或删除。
 
 ## 本次源码修复
 
@@ -96,3 +96,20 @@ C:\Users\Administrator\Documents\ChatGPT\更新 2\release-candidates\shangchuan-
 - 两个 ZIP 已上传并从公网 HTTPS 下载回读；`app.zip` SHA-256 为 `1edf2eb3a3e5186f67a01867ad7ce06c1fffc40417050ee86c88c0ff69c3f4c9`，完整包 SHA-256 为 `a8aaf6563e3463dd2dab249e9e936738a4531a1fbbc7b2083e772a8e3551df86`。
 - 两份 `latest.json` 与 `latest.js` 均已公网读回为 `1.0.15`，并指向上述不可变版本路径。
 - 源码修复提交已推送：`083c124 修复完整包根更新入口`；下载站版本和链接提交已推送：`dd0505f 发布上传投稿中心 v1.0.15`。
+
+## 2026-09-20 v1.0.16 发布验收
+
+- OSS 控制台显示以下对象上传成功：
+
+  ```text
+  updates/shang-chuan-tou-gao-zhong-xin/1.0.16/app.zip
+  packages/shang-chuan-tou-gao-zhong-xin-1.0.16.zip
+  updates/shang-chuan-tou-gao-zhong-xin/latest.json
+  updates/shang-chuan-tou-gao-zhong-xin/latest.js
+  updates/shang-chuan-tou-gao-zhong-xin/1.0.0/latest.json
+  ```
+
+- 从公网 HTTPS 回读的 SHA-256 与候选载荷一致：`app.zip` 为 `36db65222faa89e2bb537a6b54e68185a981deede4127df8869ff1169702d152`，完整包为 `ccffea6bf86cca0760ee222b36e9c5acd59f5bc2aebab838cd83c82e22b9f3b9`。
+- 两份 `latest.json` 的 SHA-256 都是 `21d08e644d282073d7ca0cf4415c2b3d72b866f23d31c036115b06e483621ae0`；`latest.js` 为 `52605cb12b6fc2d1c0288d406b2d8fa98fa011f5e1051682c1bfd954275a10b7`。公网清单为 `version: 1.0.16`，指向上述 `app.zip`。
+- 本地回归保持通过：`pytest -q test_release_safety.py test_center_startup.py API投稿2.0\\tests 自动上传\\tests` 为 **145 passed**；候选包安全校验与实际 CMD 通配符展开均通过。
+- 源码修复已推送：`53d3f04 修复 CMD 中文启动器编码`。下载站提交已推送：`07eb9e2 发布 投稿中心 v1.0.16`；公开页面已读回显示 `v1.0.16`，下载链接指向 `packages/shang-chuan-tou-gao-zhong-xin-1.0.16.zip`。
