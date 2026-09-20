@@ -31,7 +31,7 @@ def zip_directory(source: Path, destination: Path) -> None:
                 archive.write(path, path.relative_to(source).as_posix())
 
 
-def build(base_root: Path, destination: Path, version: str, launcher: Path) -> None:
+def build(base_root: Path, destination: Path, version: str, launcher: Path, app_launcher: Path) -> None:
     if destination.exists():
         raise FileExistsError(f"refusing to overwrite existing candidate: {destination}")
     if not base_root.is_dir():
@@ -42,6 +42,7 @@ def build(base_root: Path, destination: Path, version: str, launcher: Path) -> N
     shutil.copytree(base_root, package_root)
     payload.mkdir(parents=True)
     shutil.copy2(launcher, package_root / "Start.cmd")
+    shutil.copy2(app_launcher, package_root / "app" / "Start-App.cmd")
     (package_root / "app" / "version.json").write_text(
         json.dumps({"version": version}, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
@@ -55,7 +56,7 @@ def build(base_root: Path, destination: Path, version: str, launcher: Path) -> N
         "version": version,
         "url": f"{OSS_BASE}/updates/{APP_ID}/{version}/app.zip",
         "sha256": app_hash,
-        "notes": f"投稿中心 {version}：修复完整包根启动器的更新工作目录。",
+        "notes": f"投稿中心 {version}：修复 Windows CMD 对中文启动文件名的编码误读。",
         "files": files,
     }
     (payload / "latest.json").write_text(
@@ -79,8 +80,9 @@ def main() -> None:
     parser.add_argument("--destination", type=Path, required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--launcher", type=Path, default=Path(__file__).with_name("release") / "Start.cmd")
+    parser.add_argument("--app-launcher", type=Path, default=Path(__file__).with_name("API投稿2.0") / "Start-App.cmd")
     args = parser.parse_args()
-    build(args.base_root, args.destination, args.version, args.launcher)
+    build(args.base_root, args.destination, args.version, args.launcher, args.app_launcher)
     print(f"PASS {args.destination}")
 
 

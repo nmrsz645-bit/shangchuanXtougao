@@ -6,6 +6,29 @@ v1.0.14 已经公开，但客户截图证明其完整包根启动器仍不能可
 
 **v1.0.15 已完成发布。** 不得覆盖或删除任何既有版本、配置、日志、数据、客户目录或回滚目录。
 
+## 2026-09-20 v1.0.16：CMD 启动器编码修复（本地已验证，尚未发布）
+
+- 客户从网站下载的 `1.0.14` 外层目录经应用更新后，`app\version.json` 已为 `1.0.15`，但 `Start-App.cmd` 是 **UTF-8 无 BOM**，并直接写入中文 EXE 名。
+- Windows `cmd.exe` 按 GBK 解读该脚本时，将 `上传投稿中心.exe` 解析为 `涓婁紶鎶曠涓績.exe`，与客户截图中的乱码缺失路径一致。这是发布包编码问题，不是客户安装或数据问题。
+- `API投稿2.0\Start-App.cmd` 已改为纯 ASCII：只在 `app` 顶层定位唯一的 `*.exe` 后启动，彻底避免 CMD 对中文文件名的代码页依赖。
+- `build_release_candidate.py` 现在每次从源码复制应用启动器；`release_safety.py` 现在拒绝非 ASCII 启动器，并要求唯一的顶层 `上传投稿中心.exe`；对应回归测试已补齐。
+- 本地验证：`pytest -q test_release_safety.py test_center_startup.py API投稿2.0\tests 自动上传\tests` 为 **145 passed**；`cmd.exe` 对实际中文 EXE 的 ASCII 通配符展开返回正确路径；1.0.16 候选包通过 `release_safety.py`。
+
+候选载荷（保留既有候选目录，不覆盖）：
+
+```text
+C:\Users\Administrator\Documents\ChatGPT\更新 2\release-candidates\shangchuan-tougao-1.0.16-cmd-encoding\upload-payload-1.0.16
+```
+
+| 文件 | SHA-256 | OSS 目标键 |
+| --- | --- | --- |
+| `app.zip` | `36db65222faa89e2bb537a6b54e68185a981deede4127df8869ff1169702d152` | `updates/shang-chuan-tou-gao-zhong-xin/1.0.16/app.zip` |
+| `shang-chuan-tou-gao-zhong-xin-1.0.16.zip` | `ccffea6bf86cca0760ee222b36e9c5acd59f5bc2aebab838cd83c82e22b9f3b9` | `packages/shang-chuan-tou-gao-zhong-xin-1.0.16.zip` |
+| `latest.json` | `21d08e644d282073d7ca0cf4415c2b3d72b866f23d31c036115b06e483621ae0` | 两个清单位置（见下） |
+| `latest.js` | `52605cb12b6fc2d1c0288d406b2d8fa98fa011f5e1051682c1bfd954275a10b7` | `updates/shang-chuan-tou-gao-zhong-xin/latest.js` |
+
+**发布状态：未上传 1.0.16 ZIP，线上两份 `latest.json`、`latest.js` 和下载站仍必须保持 1.0.15。** 本机已登录 OSS 控制台，但本次浏览器自动化无法触发文件选择器；恢复上传时必须先上传两个 ZIP 并从公网校验 SHA-256，再最后覆盖两份 JSON 和 `latest.js`，最后才更新下载站链接。
+
 ## 本次源码修复
 
 - `API投稿2.0\version.json` 更新为 `1.0.15`；应用启动器仍只启动 `上传投稿中心.exe`。

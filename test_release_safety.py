@@ -11,7 +11,7 @@ from release_safety import REQUIRED_APP_FILES, sha256_file, validate_manifest, v
 HASH = "a" * 64
 
 
-def write_release_zip(path: Path, *, protected_path="", omit=(), launcher='@echo off\r\nstart "" "%~dp0上传投稿中心.exe"\r\n'):
+def write_release_zip(path: Path, *, protected_path="", omit=(), launcher='@echo off\r\nfor %%F in ("%~dp0*.exe") do (\r\n  start "" "%%~fF"\r\n  exit /b 0\r\n)\r\nexit /b 1\r\n'):
     with zipfile.ZipFile(path, "w") as archive:
         for name in REQUIRED_APP_FILES:
             if name not in omit:
@@ -46,7 +46,7 @@ def test_full_package_with_app_prefix_is_accepted():
                 if name == "version.json":
                     content = json.dumps({"version": "1.0.2"})
                 elif name == "Start-App.cmd":
-                    content = '@echo off\r\nstart "" "%~dp0上传投稿中心.exe"\r\n'
+                    content = '@echo off\r\nfor %%F in ("%~dp0*.exe") do (\r\n  start "" "%%~fF"\r\n  exit /b 0\r\n)\r\nexit /b 1\r\n'
                 else:
                     content = "program"
                 package.writestr(f"app/{name}", content)
@@ -73,7 +73,14 @@ def test_release_archive_rejects_legacy_api_launcher():
     with tempfile.TemporaryDirectory() as temp:
         archive = Path(temp) / "app.zip"
         write_release_zip(archive, launcher='@echo off\r\nstart "" "%~dp0API_Posting_2.exe"\r\n')
-        with pytest.raises(ValueError, match="Start-App.cmd must launch"):
+        with pytest.raises(ValueError, match="portable executable launcher"):
+            validate_release_archive(archive)
+
+def test_rejects_non_ascii_cmd_launcher():
+    with tempfile.TemporaryDirectory() as temp:
+        archive = Path(temp) / "app.zip"
+        write_release_zip(archive, launcher='@echo off\r\nstart "" "%~dp0上传投稿中心.exe"\r\n')
+        with pytest.raises(ValueError, match="ASCII only"):
             validate_release_archive(archive)
 
 
