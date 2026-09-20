@@ -25,4 +25,4 @@ def test_source_launcher_prefers_the_project_virtual_environment():
 
 
 def test_center_title_reads_the_local_version_file():
-    assert app_version(ROOT) == "1.0.14"
+    assert app_version(ROOT) == "1.0.15"

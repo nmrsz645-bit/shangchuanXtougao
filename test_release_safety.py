@@ -93,10 +93,21 @@ def test_root_start_script_must_offer_the_update_entrypoint():
             validate_update_entrypoint(start)
 
         start.write_text(
-            '@echo off\r\n"updater\\UpdateAgent.exe" --check "updater-config.json"\r\ncall "app\\Start-App.cmd"\r\n',
+            '@echo off\r\nsetlocal\r\nset "ROOT=%~dp0"\r\npushd "%ROOT%" || exit /b 1\r\n'
+            'if exist "updater\\UpdateAgent.exe" "updater\\UpdateAgent.exe" --silent --check "updater\\updater-config.json"\r\n'
+            'if exist "app\\Start-App.cmd" call "app\\Start-App.cmd"\r\npopd\r\nendlocal\r\n',
             encoding="utf-8",
         )
         validate_update_entrypoint(start)
+
+        start.write_text(
+            '@echo off\r\nsetlocal\r\nset "ROOT=%~dp0"\r\npushd "%ROOT%"\r\n'
+            'if exist "%ROOT%updater\\UpdateAgent.exe" "%ROOT%updater\\UpdateAgent.exe" --silent --check "%ROOT%updater\\updater-config.json"\r\n'
+            'if exist "%ROOT%app\\Start-App.cmd" call "%ROOT%app\\Start-App.cmd"\r\npopd\r\nendlocal\r\n',
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match="safe update entrypoint"):
+            validate_update_entrypoint(start)
 
 
 def test_full_release_requires_manifest_hash_for_the_same_archive():
@@ -108,7 +119,9 @@ def test_full_release_requires_manifest_hash_for_the_same_archive():
         write_release_zip(archive)
         write_manifest(manifest)
         start.write_text(
-            '@echo off\r\n"updater\\UpdateAgent.exe" --check "updater-config.json"\r\ncall "app\\Start-App.cmd"\r\n',
+            '@echo off\r\nsetlocal\r\nset "ROOT=%~dp0"\r\npushd "%ROOT%" || exit /b 1\r\n'
+            'if exist "updater\\UpdateAgent.exe" "updater\\UpdateAgent.exe" --silent --check "updater\\updater-config.json"\r\n'
+            'if exist "app\\Start-App.cmd" call "app\\Start-App.cmd"\r\npopd\r\nendlocal\r\n',
             encoding="utf-8",
         )
         with pytest.raises(ValueError, match="does not match release archive"):

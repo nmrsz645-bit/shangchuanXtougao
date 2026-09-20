@@ -116,12 +116,18 @@ def validate_manifest(manifest_path: Path, required_files: tuple[str, ...] = REQ
 
 
 def validate_update_entrypoint(start_script: Path) -> None:
-    """Ensure the root launcher can invoke the updater before it starts the app."""
+    """Ensure the root launcher runs the updater from its install directory."""
     content = start_script.read_text(encoding="utf-8-sig", errors="replace").lower()
-    required_fragments = ("updater\\updateagent.exe", "updater-config.json", "app\\start-app.cmd")
+    required_fragments = (
+        'set "root=%~dp0"',
+        'pushd "%root%"',
+        '"updater\\updateagent.exe" --silent --check "updater\\updater-config.json"',
+        '"app\\start-app.cmd"',
+        "popd",
+    )
     missing = [fragment for fragment in required_fragments if fragment not in content]
     if missing:
-        raise ValueError(f"root Start.cmd has no update entrypoint: {', '.join(missing)}")
+        raise ValueError(f"root Start.cmd has no safe update entrypoint: {', '.join(missing)}")
 
 
 def validate_release(app_zip: Path, manifest: Path, start_script: Path, expected_version: str | None) -> None:
