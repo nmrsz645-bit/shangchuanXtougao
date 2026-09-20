@@ -11,11 +11,16 @@ from release_safety import REQUIRED_APP_FILES, sha256_file, validate_manifest, v
 HASH = "a" * 64
 
 
-def write_release_zip(path: Path, *, protected_path="", omit=()):
+def write_release_zip(path: Path, *, protected_path="", omit=(), launcher='@echo off\r\nstart "" "%~dp0上传投稿中心.exe"\r\n'):
     with zipfile.ZipFile(path, "w") as archive:
         for name in REQUIRED_APP_FILES:
             if name not in omit:
-                content = json.dumps({"version": "1.0.2"}) if name == "version.json" else "program"
+                if name == "version.json":
+                    content = json.dumps({"version": "1.0.2"})
+                elif name == "Start-App.cmd":
+                    content = launcher
+                else:
+                    content = "program"
                 archive.writestr(name, content)
         if protected_path:
             archive.writestr(protected_path, "must never be published")
@@ -38,7 +43,12 @@ def test_full_package_with_app_prefix_is_accepted():
         archive = Path(temp) / "full-package.zip"
         with zipfile.ZipFile(archive, "w") as package:
             for name in REQUIRED_APP_FILES:
-                content = json.dumps({"version": "1.0.2"}) if name == "version.json" else "program"
+                if name == "version.json":
+                    content = json.dumps({"version": "1.0.2"})
+                elif name == "Start-App.cmd":
+                    content = '@echo off\r\nstart "" "%~dp0上传投稿中心.exe"\r\n'
+                else:
+                    content = "program"
                 package.writestr(f"app/{name}", content)
         validate_release_archive(archive, "1.0.2")
 
@@ -56,6 +66,14 @@ def test_release_archive_rejects_user_data():
         archive = Path(temp) / "app.zip"
         write_release_zip(archive, protected_path="自动上传/个人数据/Chrome/Cookies")
         with pytest.raises(ValueError, match="protected user data"):
+            validate_release_archive(archive)
+
+
+def test_release_archive_rejects_legacy_api_launcher():
+    with tempfile.TemporaryDirectory() as temp:
+        archive = Path(temp) / "app.zip"
+        write_release_zip(archive, launcher='@echo off\r\nstart "" "%~dp0API_Posting_2.exe"\r\n')
+        with pytest.raises(ValueError, match="Start-App.cmd must launch"):
             validate_release_archive(archive)
 
 

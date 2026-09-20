@@ -88,6 +88,10 @@ def validate_release_archive(archive_path: Path, expected_version: str | None = 
         if expected_version and version != expected_version:
             raise ValueError(f"archive version {version} does not match expected {expected_version}")
 
+        launcher = archive.read(entries["Start-App.cmd"]).decode("utf-8-sig", errors="replace").lower()
+        if "上传投稿中心.exe" not in launcher or "api_posting_2.exe" in launcher:
+            raise ValueError("release archive Start-App.cmd must launch 上传投稿中心.exe")
+
 
 def validate_manifest(manifest_path: Path, required_files: tuple[str, ...] = REQUIRED_APP_FILES) -> dict:
     """Check that a manifest is usable by old clients before it is activated."""
