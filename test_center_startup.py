@@ -25,4 +25,19 @@ def test_source_launcher_prefers_the_project_virtual_environment():
 
 
 def test_center_title_reads_the_local_version_file():
-    assert app_version(ROOT) == "1.0.16"
+    assert app_version(ROOT) == "1.0.17"
+
+
+def test_center_title_reads_the_packaged_version_file(tmp_path):
+    (tmp_path / "version.json").write_text('{"version":"1.2.3"}', encoding="utf-8")
+
+    assert app_version(tmp_path) == "1.2.3"
+
+
+def test_packaged_version_takes_precedence_over_a_preserved_old_source_version(tmp_path):
+    (tmp_path / "version.json").write_text('{"version":"1.2.3"}', encoding="utf-8")
+    source_root = tmp_path / "API投稿2.0"
+    source_root.mkdir()
+    (source_root / "version.json").write_text('{"version":"0.9.0"}', encoding="utf-8")
+
+    assert app_version(tmp_path) == "1.2.3"

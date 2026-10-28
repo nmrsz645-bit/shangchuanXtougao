@@ -1,4 +1,5 @@
 from pathlib import Path
+import hashlib
 import json
 import logging
 import os
@@ -6,6 +7,7 @@ import re
 import subprocess
 import threading
 import time
+from urllib.parse import parse_qs, urlparse
 
 from .automation import UploadBatchResult
 from .config import Settings, app_data_dir, chrome_profile_dir
@@ -13,6 +15,7 @@ from .config import Settings, app_data_dir, chrome_profile_dir
 
 FAILURE_WORDS = ("上传失败", "失败", "重试")
 SUCCESS_WORDS = ("上传成功", "已完成")
+IAA_CONFIRMATION_TITLE = re.compile(r'^请确认\s*[「『“"]?\s*仅\s*IAA\s*[」』”"]?\s*素材$', re.IGNORECASE)
 
 
 def find_chrome_executable(environ: dict[str, str] | None = None) -> Path | None:
@@ -117,6 +120,11 @@ class OceanEngineUploader:
         self._context = None
         self._page = None
         self._cancelled = threading.Event()
+        self._receipt_sources: dict[str, tuple[str, int]] = {}
+        self._receipt_fingerprints: dict[str, tuple[int, int]] = {}
+        self._confirmed_receipts: dict[str, set[str]] = {}
+        self._receipt_page = None
+        self._receipt_owner = ""
 
     def ensure_browser_available(self) -> Path:
         path = find_chrome_executable()
@@ -136,6 +144,7 @@ class OceanEngineUploader:
             self._check_cancelled()
 
     def close(self) -> None:
+        self._stop_receipt_tracking()
         context, playwright = self._context, self._playwright
         self._context = self._playwright = self._page = None
         try:
@@ -225,6 +234,212 @@ class OceanEngineUploader:
         page.wait_for_timeout(1000)
         return self._ids(self._row_text(page, filename))
 
+    def _stop_receipt_tracking(self) -> None:
+        page, self._receipt_page = self._receipt_page, None
+        if page is not None:
+            try:
+                page.remove_listener("response", self._capture_confirm_response)
+            except Exception:
+                logging.debug("上传确认回执监听已结束")
+
+    def _prepare_confirm_receipts(self, page, videos: list[Path]) -> None:
+        self._stop_receipt_tracking()
+        self._receipt_sources.clear()
+        self._receipt_fingerprints.clear()
+        self._confirmed_receipts.clear()
+        owners = parse_qs(urlparse(self.settings.material_url).query).get("aadvid", [])
+        self._receipt_owner = owners[0] if len(owners) == 1 and owners[0].isdigit() else ""
+        if not self._receipt_owner:
+            return
+        for video in videos:
+            self._check_cancelled()
+            before = UploadJournal._fingerprint(video)
+            with video.open("rb") as stream:
+                md5 = hashlib.file_digest(stream, "md5").hexdigest()
+            if UploadJournal._fingerprint(video) != before:
+                raise RuntimeError(f"视频在读取期间发生变化，已停止上传：{video.name}")
+            key = str(video.resolve())
+            self._receipt_sources[key] = (md5, before[0])
+            self._receipt_fingerprints[key] = before
+        self._check_cancelled()
+        page.on("response", self._capture_confirm_response)
+        self._receipt_page = page
+
+    def _receipt_source_unchanged(self, video: Path) -> bool:
+        expected = self._receipt_fingerprints.get(str(video.resolve()))
+        try:
+            return expected is not None and UploadJournal._fingerprint(video) == expected
+        except OSError:
+            return False
+
+    def _capture_confirm_response(self, response) -> None:
+        """Accept only this batch's content and this account's successful receipt."""
+        try:
+            parsed = urlparse(response.url)
+            if (parsed.scheme, parsed.netloc, parsed.path) != (
+                "https", "ad.oceanengine.com", "/material_center/api/v1/management/video/confirm"
+            ) or response.request.method != "POST" or not 200 <= response.status < 300:
+                return
+            payload = response.json()
+            if not isinstance(payload, dict) or type(payload.get("code")) is not int or payload["code"] != 0:
+                return
+            data = payload.get("data")
+            if not isinstance(data, dict) or data.get("failed") != [] or not isinstance(data.get("results"), list):
+                return
+            for row in data["results"]:
+                if not isinstance(row, dict) or type(row.get("status_code")) is not int or row["status_code"] != 0:
+                    continue
+                owners = row.get("update_owner_results", [])
+                if not isinstance(owners, list) or not any(
+                    isinstance(owner, dict) and str(owner.get("owner_id", "")) == self._receipt_owner
+                    and type(owner.get("status_code")) is int and owner["status_code"] == 0
+                    for owner in owners
+                ):
+                    continue
+                material_id = str(row.get("material_id", ""))
+                md5 = str(row.get("md5", "")).lower()
+                if not material_id.isdigit() or int(material_id) <= 0:
+                    continue
+                for key, (expected_md5, size) in self._receipt_sources.items():
+                    if md5 == expected_md5 and str(row.get("size", "")) == str(size) and self._receipt_source_unchanged(Path(key)):
+                        self._confirmed_receipts.setdefault(key, set()).add(material_id)
+                        logging.info("平台确认上传内容：%s -> 素材ID %s", Path(key).name, material_id)
+        except Exception as exc:
+            logging.debug("忽略无法核实的上传确认回执（%s）", type(exc).__name__)
+
+    def _require_material_account(self, page) -> None:
+        parsed = urlparse(page.url)
+        if (parsed.scheme, parsed.netloc, parsed.path) != (
+            "https", "ad.oceanengine.com", "/material_center/management/video"
+        ) or parse_qs(parsed.query).get("aadvid") != [self._receipt_owner]:
+            raise RuntimeError("素材ID或当前账号变化，已停止上传结果核验；原视频已保留")
+
+    def _search_material_id(self, page, material_id: str) -> bool:
+        self._require_material_account(page)
+        if not material_id.isdigit() or int(material_id) <= 0:
+            raise RuntimeError("素材ID无效，已停止上传结果核验；原视频已保留")
+        search = self._material_search(page)
+        search.wait_for(state="visible", timeout=60_000)
+        if search.count() != 1:
+            raise RuntimeError("未找到唯一的素材搜索框")
+        search.fill(material_id)
+        search.press("Enter")
+        page.wait_for_timeout(1000)
+        markers = page.get_by_text(re.compile(rf"^ID[:：]\s*{material_id}$")).filter(visible=True)
+        unique = markers.count() == 1
+        self._require_material_account(page)
+        return unique
+
+    def _verify_receipt_material(self, page, video: Path) -> bool:
+        if not self._receipt_source_unchanged(video):
+            return False
+        for material_id in sorted(self._confirmed_receipts.get(str(video.resolve()), set())):
+            self._check_cancelled()
+            self._confirm_iaa_materials(page)
+            try:
+                visible = self._search_material_id(page, material_id)
+            except Exception:
+                if not self._confirm_iaa_materials(page):
+                    raise
+                visible = self._search_material_id(page, material_id)
+            if self._confirm_iaa_materials(page):
+                visible = self._search_material_id(page, material_id)
+            if visible and self._receipt_source_unchanged(video):
+                self._require_material_account(page)
+                logging.info("按平台回执及素材ID核验成功：%s -> %s", video.name, material_id)
+                return True
+        return False
+
+    @staticmethod
+    def _require_unselected_iaa(modal) -> None:
+        selected = re.findall(r"已选择\s*(\d+)\s*个素材\s*仅投放\s*IAA", modal.inner_text())
+        if selected != ["0"]:
+            raise RuntimeError("仅IAA弹窗选中数量不为0或状态不明，已停止自动确认；原视频已保留")
+        unsafe_selection = modal.locator(
+            'input[type="checkbox"], [role="checkbox"], .material-center-v2-checkbox--indeterminate'
+        ).evaluate_all(
+            """elements => elements.some(element => {
+                // This site's checkbox expresses partial selection only in CSS.
+                if (element.classList.contains('material-center-v2-checkbox--indeterminate')) {
+                    return true;
+                }
+                if (element.matches('input[type="checkbox"]')) {
+                    return element.checked || element.indeterminate;
+                }
+                return element.getAttribute('aria-checked') !== 'false';
+            })"""
+        )
+        if unsafe_selection:
+            raise RuntimeError("仅IAA弹窗存在已勾选或状态不明的素材，已停止自动确认；原视频已保留")
+
+    def _confirm_iaa_materials(self, page, *, timeout_ms: int = 0) -> bool:
+        """Dismiss only the known IAA dialog, without changing any selection."""
+        titles = page.get_by_text(IAA_CONFIRMATION_TITLE).filter(visible=True)
+        deadline = time.monotonic() + timeout_ms / 1000
+        while True:
+            self._check_cancelled()
+            count = titles.count()
+            if count:
+                break
+            if time.monotonic() >= deadline:
+                return False
+            self._wait(100)
+        if count != 1:
+            raise RuntimeError("仅IAA确认弹窗不唯一，已停止自动确认；原视频已保留")
+        # Restrict the button search to a recognized modal ancestor of its title.
+        # Never fall back to a page-wide '确认' button when the site changes.
+        modal = titles.locator(
+            'xpath=ancestor::*[@role="dialog" or @aria-modal="true" or '
+            'contains(concat(" ", normalize-space(@class), " "), " byted-modal ") or '
+            'contains(concat(" ", normalize-space(@class), " "), " arco-modal ") or '
+            'contains(concat(" ", normalize-space(@class), " "), " ant-modal ") or '
+            'contains(concat(" ", normalize-space(@class), " "), " material-center-v2-modal ")][1]'
+        )
+        if modal.count() != 1 or not modal.is_visible():
+            raise RuntimeError("未识别到仅IAA确认弹窗容器，已停止自动确认；原视频已保留")
+        text = modal.inner_text()
+        uploads = re.findall(r"本次成功上传\s*了?\s*(\d+)\s*个素材", text)
+        if len(uploads) != 1 or int(uploads[0]) < 1:
+            raise RuntimeError("仅IAA弹窗内容变化，已停止自动确认；原视频已保留")
+        self._require_unselected_iaa(modal)
+        confirm = modal.get_by_role("button", name="确认", exact=True).filter(visible=True)
+        if confirm.count() != 1 or not confirm.is_enabled():
+            raise RuntimeError("仅IAA弹窗未找到唯一可用的“确认”按钮；原视频已保留")
+        self._check_cancelled()
+        # Keep the actual container: its title may disappear before the modal does.
+        element = modal.element_handle()
+        if element is None:
+            raise RuntimeError("仅IAA确认弹窗已变化，已停止自动确认；原视频已保留")
+        try:
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+            deadline = time.monotonic() + min(10, self.confirmation_timeout_seconds)
+            while True:
+                self._check_cancelled()
+                try:
+                    # Short actionability probes keep a covered button's wait
+                    # cancellable; a probe never dispatches a click.
+                    confirm.click(trial=True, timeout=100)
+                    break
+                except PlaywrightTimeoutError:
+                    self._check_cancelled()
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError("仅IAA确认按钮持续不可点击；原视频已保留") from None
+            self._require_unselected_iaa(modal)
+            self._check_cancelled()
+            confirm.click(timeout=250)
+            deadline = time.monotonic() + min(10, self.confirmation_timeout_seconds)
+            while True:
+                self._check_cancelled()
+                if not element.is_visible():
+                    logging.info("已确认仅IAA素材弹窗，未勾选任何素材")
+                    return True
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("仅IAA确认弹窗未关闭；原视频已保留，尚未确认上传结果")
+                self._wait(100)
+        finally:
+            element.dispose()
+
     def _wait_for_result(self, page, videos: list[Path], previous_ids: dict[Path, set[str]]) -> UploadBatchResult:
         deadline = time.monotonic() + self.confirmation_timeout_seconds
         succeeded: set[Path] = set()
@@ -234,7 +449,26 @@ class OceanEngineUploader:
             for video in videos:
                 if video in succeeded or video in failed:
                     continue
-                current_ids = self._search_ids(page, video.name)
+                if self._confirmed_receipts.get(str(video.resolve())):
+                    if self._verify_receipt_material(page, video):
+                        succeeded.add(video)
+                    continue
+                self._confirm_iaa_materials(page)
+                try:
+                    current_ids = self._search_ids(page, video.name)
+                except Exception:
+                    # A delayed dialog can add another video search input between
+                    # the guard above and the search. Retry only after dismissing it.
+                    if not self._confirm_iaa_materials(page):
+                        raise
+                    current_ids = self._search_ids(page, video.name)
+                if self._confirm_iaa_materials(page):
+                    # IDs read from an open IAA modal are not list verification.
+                    current_ids = self._search_ids(page, video.name)
+                if self._confirmed_receipts.get(str(video.resolve())):
+                    if self._verify_receipt_material(page, video):
+                        succeeded.add(video)
+                    continue
                 new_ids = current_ids - previous_ids[video]
                 if new_ids or (previous_ids[video] and current_ids):
                     if not new_ids:
@@ -286,6 +520,34 @@ class OceanEngineUploader:
         )
         return [float(value) for value in values]
 
+    @staticmethod
+    def _dialog_all_uploaded(page, videos: list[Path]) -> bool:
+        """Recognize a batch that finished before any progress was observed."""
+        if not videos or len({video.name for video in videos}) != len(videos):
+            return False
+        titles = page.get_by_text("本地上传", exact=True).filter(visible=True)
+        if titles.count() != 1:
+            return False
+        drawer = titles.locator(
+            'xpath=ancestor::*[@role="dialog" or @aria-modal="true" or '
+            'contains(concat(" ", normalize-space(@class), " "), " material-center-v2-drawer ")][1]'
+        )
+        if drawer.count() != 1 or not drawer.is_visible():
+            return False
+        counts = {}
+        for label in ("全部", "已上传", "上传失败", "上传中"):
+            pattern = re.compile(rf"^{label}\s*[（(]\s*(\d+)\s*[）)]$")
+            matches = drawer.get_by_text(pattern).filter(visible=True)
+            if matches.count() != 1:
+                return False
+            match = pattern.fullmatch(matches.inner_text().strip())
+            if not match:
+                return False
+            counts[label] = int(match[1])
+        if counts != {"全部": len(videos), "已上传": len(videos), "上传失败": 0, "上传中": 0}:
+            return False
+        return all(drawer.get_by_text(video.name, exact=True).filter(visible=True).count() == 1 for video in videos)
+
     def _wait_for_dialog_uploads(self, page, videos: list[Path]) -> UploadBatchResult:
         deadline = time.monotonic() + self.timeout_seconds
         stall_timeout = self.settings.upload_stall_timeout_minutes * 60
@@ -297,6 +559,9 @@ class OceanEngineUploader:
         next_log = 0.0
         while time.monotonic() < deadline:
             self._check_cancelled()
+            if not failed and self._dialog_all_uploaded(page, videos):
+                logging.info("上传弹窗确认全部文件已上传：%s/%s", len(videos), len(videos))
+                return UploadBatchResult(tuple(videos))
             states: list[str] = []
             for video in videos:
                 if video in completed or video in failed:
@@ -348,6 +613,8 @@ class OceanEngineUploader:
         except Exception:
             self.reset()
             raise
+        finally:
+            self._stop_receipt_tracking()
 
     def _upload_batch(self, videos: list[Path]) -> UploadBatchResult:
         page = self._ensure_page()
@@ -404,6 +671,7 @@ class OceanEngineUploader:
         chooser = chooser_info.value
         if len(fresh) > 1 and not chooser.is_multiple():
             raise RuntimeError("当前上传窗口不支持一次选择多个视频")
+        self._prepare_confirm_receipts(page, fresh)
         for video in fresh:
             self.journal.begin(video, previous_ids[video])
         chooser.set_files([str(path) for path in fresh])
@@ -423,6 +691,7 @@ class OceanEngineUploader:
             disabled_permanent = [video for video in disabled if (row := self.journal.get(video)) and int(row.get("attempts", 0)) >= self.settings.max_batch_attempts]
             return UploadBatchResult(tuple(recovered), tuple(video for video in disabled if video not in disabled_permanent), tuple(waiting), permanent=tuple([*permanent, *dialog_permanent, *disabled_permanent]))
         confirm.click()
+        self._confirm_iaa_materials(page, timeout_ms=min(10_000, int(self.confirmation_timeout_seconds * 1000)))
         self.journal.mark_confirmed(list(dialog_result.succeeded))
 
         result = self._wait_for_result(page, list(dialog_result.succeeded), previous_ids)

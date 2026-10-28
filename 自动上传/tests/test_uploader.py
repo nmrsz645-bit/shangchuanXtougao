@@ -1,7 +1,9 @@
 from video_feishu.config import Settings
 import pytest
+from unittest.mock import MagicMock
 
 from video_feishu.uploader import OceanEngineUploader, UploadCancelled, UploadJournal, find_chrome_executable
+from video_feishu.automation import UploadBatchResult
 
 
 def test_finds_system_wide_chrome(tmp_path):
@@ -99,6 +101,7 @@ def test_confirmed_duplicate_accepts_existing_material_id(tmp_path):
     video = tmp_path / "duplicate.mp4"
     video.write_bytes(b"video")
     uploader = OceanEngineUploader(Settings(), timeout_seconds=1)
+    uploader._confirm_iaa_materials = lambda *_args, **_kwargs: False
     uploader._search_ids = lambda _page, _name: {"100"}
 
     result = uploader._wait_for_result(object(), [video], {video: {"100"}})
@@ -111,6 +114,7 @@ def test_confirmation_search_uses_its_own_timeout(tmp_path, monkeypatch):
     video.write_bytes(b"video")
     clock = [0.0]
     uploader = OceanEngineUploader(Settings(upload_confirmation_timeout_minutes=1), timeout_seconds=999)
+    uploader._confirm_iaa_materials = lambda *_args, **_kwargs: False
     uploader._search_ids = lambda _page, _name: set()
     uploader._wait = lambda _milliseconds: clock.__setitem__(0, clock[0] + 61)
     monkeypatch.setattr("video_feishu.uploader.time.monotonic", lambda: clock[0])
@@ -155,6 +159,7 @@ def test_dialog_cancels_only_failed_file_for_next_cycle(tmp_path):
 
     page = Page()
     uploader = OceanEngineUploader(Settings(), timeout_seconds=5)
+    uploader._dialog_all_uploaded = lambda *_args: False
     uploader._row_text = lambda current, filename: (
         "上传成功" if filename == good.name or current.tick > 0 else "上传失败 重试"
     )
@@ -175,6 +180,7 @@ def test_dialog_cancels_stalled_file_after_configured_minutes(tmp_path, monkeypa
     video.write_bytes(b"video")
     clock = [0.0]
     uploader = OceanEngineUploader(Settings(upload_stall_timeout_minutes=1), timeout_seconds=120)
+    uploader._dialog_all_uploaded = lambda *_args: False
     uploader._row_text = lambda _page, _filename: "stalled.mp4 2%"
     uploader._dialog_progress = lambda _page, _filename: []
     uploader._wait = lambda _milliseconds: clock.__setitem__(0, clock[0] + 61)
@@ -192,6 +198,7 @@ def test_dialog_keeps_failed_video_when_cancel_control_is_missing(tmp_path):
     video = tmp_path / "uncancellable.mp4"
     video.write_bytes(b"video")
     uploader = OceanEngineUploader(Settings(), timeout_seconds=5)
+    uploader._dialog_all_uploaded = lambda *_args: False
     uploader._row_text = lambda _page, _filename: "上传失败"
     uploader._dialog_progress = lambda _page, _filename: []
     uploader._click_dialog_cancel = lambda *_args: False
@@ -206,6 +213,7 @@ def test_dialog_progress_growth_resets_stall_timer(tmp_path, monkeypatch):
     video.write_bytes(b"video")
     clock = [0.0]
     uploader = OceanEngineUploader(Settings(upload_stall_timeout_minutes=1), timeout_seconds=120)
+    uploader._dialog_all_uploaded = lambda *_args: False
     uploader._row_text = lambda _page, _filename: "growing.mp4 " + ("2%" if clock[0] < 30 else "3%" if clock[0] < 60 else "100%")
     uploader._dialog_progress = lambda _page, _filename: []
     uploader._wait = lambda _milliseconds: clock.__setitem__(0, clock[0] + 30)
@@ -226,6 +234,7 @@ def test_dialog_accepts_100_percent_as_complete(tmp_path):
             pass
 
     uploader = OceanEngineUploader(Settings(), timeout_seconds=1)
+    uploader._dialog_all_uploaded = lambda *_args: False
     uploader._row_text = lambda _page, _filename: "large.mp4 100%"
     uploader._dialog_progress = lambda _page, _filename: [100]
 
@@ -285,3 +294,136 @@ def test_close_accepts_browser_already_closed():
     uploader.close()
 
     assert uploader._playwright is None
+
+
+def _ready_upload(tmp_path):
+    video = tmp_path / "ready.mp4"
+    video.write_bytes(b"offline-video")
+    journal = UploadJournal(tmp_path / "jobs.json")
+    uploader = OceanEngineUploader(Settings(), journal=journal)
+    page = MagicMock()
+    page.get_by_text.return_value.count.return_value = 1
+    page.get_by_role.return_value.count.return_value = 1
+    page.get_by_role.return_value.is_enabled.return_value = True
+    uploader._ensure_page = lambda: page
+    uploader._search_ids = lambda *_args: set()
+    uploader._wait_for_dialog_uploads = lambda *_args: UploadBatchResult((video,))
+    return uploader, page, video
+
+
+def test_upload_handles_iaa_before_marking_confirmed_and_querying_results(tmp_path):
+    uploader, page, video = _ready_upload(tmp_path)
+    events = []
+    page.get_by_role.return_value.click.side_effect = lambda: events.append("upload-confirm")
+    uploader._confirm_iaa_materials = lambda *_args, **_kwargs: events.append("iaa-confirm") or True
+    mark_confirmed = uploader.journal.mark_confirmed
+
+    def mark(paths):
+        events.append("journal-confirmed")
+        mark_confirmed(paths)
+
+    def result(*_args):
+        events.append("verify-material")
+        assert events == ["upload-confirm", "iaa-confirm", "journal-confirmed", "verify-material"]
+        return UploadBatchResult((video,))
+
+    uploader.journal.mark_confirmed = mark
+    uploader._wait_for_result = result
+
+    result = uploader._upload_batch([video])
+
+    assert result.succeeded == (video,)
+    assert video.exists()
+
+
+def test_iaa_failure_preserves_video_and_does_not_mark_upload_confirmed(tmp_path):
+    uploader, _page, video = _ready_upload(tmp_path)
+
+    def stuck(*_args, **_kwargs):
+        raise TimeoutError("仅IAA确认弹窗未关闭")
+
+    uploader._confirm_iaa_materials = stuck
+    uploader._wait_for_result = lambda *_args: pytest.fail("must not verify before confirmation")
+
+    with pytest.raises(TimeoutError, match="仅IAA"):
+        uploader._upload_batch([video])
+
+    assert video.exists()
+    assert "confirmed_at" not in uploader.journal.get(video)
+
+
+def test_delayed_iaa_dialog_is_handled_before_each_material_search(tmp_path):
+    video = tmp_path / "late.mp4"
+    uploader = OceanEngineUploader(Settings())
+    events = []
+    checks = iter((True, False))
+    uploader._confirm_iaa_materials = lambda *_args, **_kwargs: events.append("iaa-check") or next(checks)
+    uploader._search_ids = lambda *_args: events.append("search") or {"200"}
+
+    result = uploader._wait_for_result(object(), [video], {video: set()})
+
+    assert result.succeeded == (video,)
+    assert events == ["iaa-check", "search", "iaa-check"]
+
+
+def test_iaa_appearing_during_search_is_confirmed_then_search_retried(tmp_path):
+    video = tmp_path / "race.mp4"
+    uploader = OceanEngineUploader(Settings())
+    events = []
+    checks = iter((False, True, False))
+
+    def confirm(*_args, **_kwargs):
+        events.append("iaa-check")
+        return next(checks)
+
+    def search(*_args):
+        events.append("search")
+        if events.count("search") == 1:
+            raise RuntimeError("two visible video search inputs")
+        return {"200"}
+
+    uploader._confirm_iaa_materials = confirm
+    uploader._search_ids = search
+
+    result = uploader._wait_for_result(object(), [video], {video: set()})
+
+    assert result.succeeded == (video,)
+    assert events == ["iaa-check", "search", "iaa-check", "search", "iaa-check"]
+
+
+def test_unrelated_search_error_is_not_hidden_by_iaa_handling(tmp_path):
+    video = tmp_path / "error.mp4"
+    uploader = OceanEngineUploader(Settings())
+    uploader._confirm_iaa_materials = lambda *_args, **_kwargs: False
+
+    def search(*_args):
+        raise RuntimeError("unrelated search failure")
+
+    uploader._search_ids = search
+
+    with pytest.raises(RuntimeError, match="unrelated search failure"):
+        uploader._wait_for_result(object(), [video], {video: set()})
+
+
+def test_iaa_appearing_during_successful_search_requires_fresh_material_query(tmp_path):
+    video = tmp_path / "late-success.mp4"
+    uploader = OceanEngineUploader(Settings())
+    events = []
+    checks = iter((False, True))
+    ids = iter(({"modal-id"}, {"verified-material-id"}))
+
+    def confirm(*_args, **_kwargs):
+        events.append("iaa-check")
+        return next(checks)
+
+    def search(*_args):
+        events.append("search")
+        return next(ids)
+
+    uploader._confirm_iaa_materials = confirm
+    uploader._search_ids = search
+
+    result = uploader._wait_for_result(object(), [video], {video: set()})
+
+    assert result.succeeded == (video,)
+    assert events == ["iaa-check", "search", "iaa-check", "search"]

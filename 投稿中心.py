@@ -18,11 +18,15 @@ from daily_restart import needs_daily_check
 
 
 def app_version(base_dir=ROOT) -> str:
-    try:
-        payload = json.loads((Path(base_dir) / "API投稿2.0" / "version.json").read_text(encoding="utf-8"))
-        return str(payload["version"]).strip()
-    except (OSError, ValueError, KeyError, TypeError):
-        return "未知"
+    for path in (Path(base_dir) / "version.json", Path(base_dir) / "API投稿2.0" / "version.json"):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            version = payload["version"]
+            if isinstance(version, str) and version.strip():
+                return version.strip()
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    return "未知"
 
 
 def main() -> None:
