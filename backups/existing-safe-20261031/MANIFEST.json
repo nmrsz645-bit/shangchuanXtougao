@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-10-31",
+  "repository": "nmrsz645-bit/shangchuanXtougao",
+  "backupBranch": "backup/existing-safe-20261031",
+  "baselineCommit": "a142a7347115f71cd4a9d87e6da46214355a6148",
+  "baselineAlreadyOnRemote": true,
+  "purpose": "Archive previously ignored historical release helpers only; not product development or a release.",
+  "status": "historical-unexecuted-snapshot",
+  "historicalCandidateVersion": "1.0.17",
+  "programReleaseTag": "v1.0.17",
+  "programReleaseCommit": "6071b4f6a640e3b27b78e302cff6a33fbeb57e6d",
+  "files": [
+    {
+      "sourceRelativeToHistoricalCandidate": "assemble_release.py",
+      "snapshotPath": "backups/existing-safe-20261031/assemble_release.py",
+      "bytes": 4681,
+      "sourceSha256": "b0057e3572e92eb808221fbe6265b1367212395fdd06873e2968c8988c08f82b",
+      "snapshotSha256": "a98724eb881ce6c6e23a75c60072e62839e597e092508e598b6cd67d0a1f66ff",
+      "localDependencyPathPrefixesSanitized": 1
+    },
+    {
+      "sourceRelativeToHistoricalCandidate": "verify_https_upgrade.py",
+      "snapshotPath": "backups/existing-safe-20261031/verify_https_upgrade.py",
+      "bytes": 5854,
+      "sourceSha256": "5ddfef827866d56931876ba4640626f3ef00d553a7b8f14b65c073b823af74f0",
+      "snapshotSha256": "11fb9ddb3ed0cbbe300c33ed95c3eb52e7b7dcea67bad05b52a6087fdb76802b",
+      "localDependencyPathPrefixesSanitized": 1
+    },
+    {
+      "sourceRelativeToHistoricalCandidate": "verify_isolated_upgrade.py",
+      "snapshotPath": "backups/existing-safe-20261031/verify_isolated_upgrade.py",
+      "bytes": 4587,
+      "sourceSha256": "a5fa84b5c1456dd95a9c6935b71681edb3c0b0b5e2952fa4672ce79c79e604e1",
+      "snapshotSha256": "6713105574dde2e903a6efe5f5c7282160ec4cd04040a0b5950d0470285ec69f",
+      "localDependencyPathPrefixesSanitized": 1
+    },
+    {
+      "sourceRelativeToHistoricalCandidate": "verification/audit_packaged_code.py",
+      "snapshotPath": "backups/existing-safe-20261031/verification/audit_packaged_code.py",
+      "bytes": 11884,
+      "sourceSha256": "b1677ff49752d334b9dbb6134ca796f22ae73621d287ffc38c8210a434e48674",
+      "snapshotSha256": "b1677ff49752d334b9dbb6134ca796f22ae73621d287ffc38c8210a434e48674",
+      "localDependencyPathPrefixesSanitized": 0
+    }
+  ],
+  "excludedCategories": [
+    "private local HANDOFF and all-project index",
+    "credentials, tokens, cookies, real environment files and login profiles",
+    "personal/customer/business/financial/order data and media",
+    "raw chats, coordination audits, local reports and temporary test fixtures",
+    "virtual environments, installed vendor packages, cache and models",
+    "duplicate program binaries and already-backed-up release assets"
+  ],
+  "originalsPreserved": true,
+  "executedForBackup": {
+    "historicalHelpers": false,
+    "tests": false,
+    "build": false,
+    "gui": false,
+    "businessTasks": false
+  },
+  "missingComponentSource": "Exact original project/source/build tests of the existing external UpdateAgent.exe are not available."
+}
