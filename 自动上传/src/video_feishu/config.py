@@ -15,7 +15,7 @@ class Settings:
     auto_start: bool = False
     auto_execute: bool = False
     write_upload_success_to_feishu: bool = False
-    material_url: str = "https://ad.oceanengine.com/material_center/management/video?aadvid=1869328457013324#source=ad_navigator"
+    material_url: str = ""
     batch_size: int = 10
     check_interval_minutes: int = 30
     upload_retry_seconds: int = 60

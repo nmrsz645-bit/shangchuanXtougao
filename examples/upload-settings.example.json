@@ -1,0 +1,19 @@
+{
+  "app_id": "",
+  "copy_url": "",
+  "paste_url": "",
+  "source_dir": "",
+  "destination_dir": "",
+  "material_url": "",
+  "auto_start": false,
+  "auto_execute": false,
+  "write_upload_success_to_feishu": false,
+  "batch_size": 10,
+  "check_interval_minutes": 30,
+  "upload_retry_seconds": 60,
+  "max_batch_attempts": 3,
+  "upload_timeout_seconds": 21600,
+  "upload_stall_timeout_minutes": 45,
+  "upload_confirmation_timeout_minutes": 6,
+  "recovery_grace_seconds": 1800
+}

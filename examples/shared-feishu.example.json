@@ -1,0 +1,10 @@
+{
+  "app_id": "",
+  "secret": "",
+  "task_sheet_url": "",
+  "copy_sheet_url": "",
+  "start_with_windows": false,
+  "start_tasks_automatically": false,
+  "daily_restart_enabled": true,
+  "last_daily_restart_check": ""
+}

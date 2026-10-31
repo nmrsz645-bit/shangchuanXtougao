@@ -25,7 +25,7 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pip install -e "./自动上传[dev]"
-      - run: python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py -q
+      - run: python -m pytest test_center_startup.py test_daily_restart.py test_shared_feishu.py test_handoff_safety.py test_release_safety.py test_github_package.py -q
       - run: python run_api_tests.py
       - run: python -m pytest -q
         working-directory: 自动上传

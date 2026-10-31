@@ -2,6 +2,17 @@ from video_feishu.config import JsonSettingsStore, RetryStore, Settings, app_dat
 from video_feishu.startup import cleanup_old_versions, is_auto_start_enabled, set_auto_start, startup_file
 
 
+def test_new_install_requires_own_material_account_url():
+    assert Settings().material_url == ""
+
+
+def test_saved_material_account_is_preserved(tmp_path):
+    store = JsonSettingsStore(tmp_path / "settings.json")
+    url = "https://ad.oceanengine.com/material_center/management/video?aadvid=1234567890123456"
+    store.save(Settings(material_url=url))
+    assert store.load().material_url == url
+
+
 def test_cleanup_old_versions_removes_only_update_backups(tmp_path):
     app = tmp_path / "app"
     app.mkdir()
