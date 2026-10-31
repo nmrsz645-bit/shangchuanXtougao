@@ -3,6 +3,8 @@
 Windows 本地桌面工具：从飞书读取任务，浏览器上传视频素材，通过巨量千川 API 投稿。
 本仓库包含整合界面、API 投稿、视频上传模块、离线测试和打包脚本。
 
+另一台 Windows 电脑接手、生成完整/应用层更新包、保护旧客户端清单及网站发布流程，统一见 [docs/RELEASE-GUIDE.md](https://github.com/nmrsz645-bit/shangchuanXtougao/blob/main/docs/RELEASE-GUIDE.md)。源码推送不等于客户端或网站已更新。
+
 ## 安装与启动
 
 1. 从本仓库 [GitHub Releases](https://github.com/nmrsz645-bit/shangchuanXtougao/releases/tag/v1.0.17) 下载 `shang-chuan-tou-gao-zhong-xin-1.0.17-github-windows-x64.zip`；普通用户不要下载 Source code ZIP 代替程序包。

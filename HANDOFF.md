@@ -3,6 +3,7 @@
 ## 先读与版本边界
 
 - 用户操作先读 README.md；维护先读本文件和 AGENTS.md，再打开任务涉及的模块。
+- 跨电脑安装、实际构建命令、两处正式 JSON、OSS key、网站卡片/catalog、验收与回滚统一维护在 [docs/RELEASE-GUIDE.md](https://github.com/nmrsz645-bit/shangchuanXtougao/blob/main/docs/RELEASE-GUIDE.md)；生产操作须另有对应授权。
 - 产品版本来自 `API投稿2.0/version.json`，当前为 **1.0.17**；上传子模块 pyproject 的 0.1.0 是内部包版本，不能据此判断产品版本。
 - 仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao`，正式分支 `main`。
 - 上传完成/IAA 修复源码基线：`a0ada8ea1a6637aad4c98febd713addc53683380`。
@@ -84,6 +85,8 @@ $python = Join-Path $PWD '.venv\Scripts\python.exe'
 新程序包发布前应比较冻结模块与源码，检查依赖、归档全部文件及敏感数据，实际验证来源提交。
 
 ## 发布与更新方法
+
+本节是概要；可执行参数与本产品对象以 [RELEASE-GUIDE](https://github.com/nmrsz645-bit/shangchuanXtougao/blob/main/docs/RELEASE-GUIDE.md) 为统一入口。GitHub 1.0.17 标签仍固定在程序发行提交，后续纯文档提交不会重新发布程序。
 
 1. 核对 Git status、远端分支及现有 Release；不覆盖他人变更、旧 tag 或旧资产。
 2. 当前源码与全部可达 Git 历史做凭证扫描；扫描日志脱敏。检查本地路径、用户数据、测试资料，不把未命中等同于绝对无风险。
