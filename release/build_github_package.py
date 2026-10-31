@@ -17,6 +17,8 @@ from release_safety import REQUIRED_APP_FILES, validate_release_archive, validat
 
 ROOT = Path(__file__).resolve().parents[1]
 UPDATER_SHA256 = "68721ebefcdebbe7b4133424d9e432bcfa0372f7a015ecf54d5aeeb5a6493316"
+EXAMPLES = ("examples/shared-feishu.example.json", "examples/api-settings.example.json",
+            "examples/upload-settings.example.json")
 
 
 def sha256(path: Path) -> str:
@@ -98,6 +100,16 @@ def verify_frozen_source(app_dist: Path, source_commit: str) -> None:
         raise ValueError("fresh frozen file manifest mismatch")
 
 
+def read_committed_asset(name: str, source_commit: str) -> bytes:
+    path = ROOT / name
+    if path.is_symlink() or any(p.is_symlink() for p in path.parents if p != ROOT):
+        raise ValueError("symlink in release assets")
+    committed = subprocess.check_output(["git", "show", f"{source_commit}:{name}"], cwd=ROOT)
+    if path.read_bytes().replace(b"\r\n", b"\n") != committed.replace(b"\r\n", b"\n"):
+        raise ValueError(f"uncommitted release asset: {name}")
+    return committed
+
+
 def assemble(app_dist: Path, updater: Path, destination: Path, source_commit: str) -> Path:
     if destination.exists():
         raise FileExistsError(f"refusing to overwrite: {destination}")
@@ -112,17 +124,25 @@ def assemble(app_dist: Path, updater: Path, destination: Path, source_commit: st
         if path.is_symlink() or protected.intersection(parts) or any(p.startswith(".env.") for p in parts):
             raise ValueError("runtime data or symlink in fresh dist")
     verify_frozen_source(app_dist, source_commit)
-    version = json.loads((ROOT / "API投稿2.0" / "version.json").read_text("utf-8"))["version"]
+    examples = list((ROOT / "examples").rglob("*"))
+    if any(p.is_symlink() for p in examples) or {p.relative_to(ROOT).as_posix() for p in examples if p.is_file()} != set(EXAMPLES):
+        raise ValueError("unexpected examples release assets")
+    assets = {name: read_committed_asset(name, source_commit) for name in
+              ("README.md", "HANDOFF.md", "release/Start.cmd", "API投稿2.0/Start-App.cmd",
+               "API投稿2.0/version.json", "发布版使用说明.txt", *EXAMPLES)}
+    version = json.loads(assets["API投稿2.0/version.json"])["version"]
     package = destination / "package"
     app = package / "app"
     shutil.copytree(app_dist, app)
-    shutil.copy2(ROOT / "API投稿2.0" / "Start-App.cmd", app / "Start-App.cmd")
-    shutil.copy2(ROOT / "API投稿2.0" / "version.json", app / "version.json")
-    shutil.copy2(ROOT / "release" / "Start.cmd", package / "Start.cmd")
+    (app / "Start-App.cmd").write_bytes(assets["API投稿2.0/Start-App.cmd"])
+    (app / "version.json").write_bytes(assets["API投稿2.0/version.json"])
+    (package / "Start.cmd").write_bytes(assets["release/Start.cmd"])
     validate_update_entrypoint(package / "Start.cmd")
     for name in ("README.md", "HANDOFF.md"):
-        shutil.copy2(ROOT / name, package / name)
-    shutil.copytree(ROOT / "examples", package / "examples")
+        (package / name).write_bytes(assets[name])
+    (package / "examples").mkdir()
+    for name in EXAMPLES:
+        (package / name).write_bytes(assets[name])
     (package / "updater").mkdir()
     shutil.copy2(updater, package / "updater" / "UpdateAgent.exe")
     config = {

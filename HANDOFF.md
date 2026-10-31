@@ -55,7 +55,7 @@ py -3.13 -m venv .venv
 
 开发 GUI：`.\.venv\Scripts\python.exe 投稿中心.py`；它会加载已有设置，只有确认隔离/无自动任务或取得授权后才能启动。
 CI `.github/workflows/offline-tests.yml` 运行 Windows/Ubuntu Python 3.13 离线测试；push 仅触发测试，不部署 OSS、下载站或真实业务。
-显式列出测试路径可避免递归收集本机保留的候选源码副本。2026-10-31 Windows 本地完整回归为 **302 passed in 19.17s**。构建、CI、审查与公网回读结果另见 GitHub Release 验收说明，不把旧记录当作未来修改后的通过证据。
+显式列出测试路径可避免递归收集本机保留的候选源码副本。2026-10-31 Windows 本地完整回归为 **304 passed in 21.50s**。构建、CI、审查与公网回读结果另见 GitHub Release 验收说明，不把旧记录当作未来修改后的通过证据。
 
 ## 安全配置模板与数据位置
 

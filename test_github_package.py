@@ -29,8 +29,9 @@ def test_clean_package_has_launchers_docs_and_no_runtime_files(tmp_path, monkeyp
     updater.write_bytes(b"audited test fixture")
     monkeypatch.setattr(builder, "UPDATER_SHA256", hashlib.sha256(updater.read_bytes()).hexdigest())
     output = tmp_path / "release"
-    full = builder.assemble(app, updater, output, "0" * 40)
-    assert verified == [(app, "0" * 40)]
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=builder.ROOT, text=True).strip()
+    full = builder.assemble(app, updater, output, commit)
+    assert verified == [(app, commit)]
     with zipfile.ZipFile(full) as z:
         names = set(z.namelist())
         assert {"Start.cmd", "README.md", "HANDOFF.md", "BUILD-INFO.json",
@@ -69,3 +70,31 @@ def test_placeholder_executable_cannot_claim_current_source(tmp_path):
 def test_source_commit_must_be_current_head(tmp_path):
     with pytest.raises(ValueError, match="commit"):
         builder.verify_frozen_source(tmp_path, "0" * 40)
+
+
+def test_unlisted_example_file_cannot_enter_package(tmp_path, monkeypatch):
+    root = tmp_path / "source"
+    (root / "examples").mkdir(parents=True)
+    (root / "examples" / "tokens.json").write_text("{}")
+    monkeypatch.setattr(builder, "ROOT", root)
+    monkeypatch.setattr(builder, "verify_frozen_source", lambda *args: None)
+    app = tmp_path / "dist"
+    app.mkdir()
+    updater = tmp_path / "UpdateAgent.exe"
+    updater.write_bytes(b"audited test fixture")
+    monkeypatch.setattr(builder, "UPDATER_SHA256", hashlib.sha256(updater.read_bytes()).hexdigest())
+    with pytest.raises(ValueError, match="examples"):
+        builder.assemble(app, updater, tmp_path / "output", "0" * 40)
+
+
+def test_modified_document_cannot_claim_committed_content(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    doc = tmp_path / "README.md"
+    doc.write_text("committed documentation", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "fixture"], cwd=tmp_path, check=True)
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True).strip()
+    doc.write_text("uncommitted documentation", encoding="utf-8")
+    monkeypatch.setattr(builder, "ROOT", tmp_path)
+    with pytest.raises(ValueError, match="uncommitted"):
+        builder.read_committed_asset("README.md", commit)
