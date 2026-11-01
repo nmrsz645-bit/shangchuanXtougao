@@ -1,7 +1,24 @@
 # 新 Windows 电脑接手、程序更新与网站发布指南
 
-核对日期：2026-10-31。产品当前版本 **1.0.17**；本次仅补文档，下面涉及生产上传、Release 和网站的步骤均为**未来另获对应授权后的操作说明，本阶段没有执行**。
+核对日期：2026-11-01。产品当前版本 **1.0.17**；本次为另一台电脑 Codex 补齐接手说明，下面涉及生产上传、Release 和网站的步骤均为**未来另获对应授权后的操作说明，本阶段没有执行**。
 `git push` 源码不等于给客户端推送更新，也不等于发布网站。
+
+## 0. 给另一台电脑 Codex 的接手指令
+
+可把下面这段文字连同本仓库地址交给新电脑的 Codex；公开源码和指南足够开始维护，不需要复制旧聊天、整盘目录或私人配置：
+
+> 请接手 https://github.com/nmrsz645-bit/shangchuanXtougao 的 main。先读 HANDOFF.md、AGENTS.md 和 docs/RELEASE-GUIDE.md。已有源码先只读核对 Git 根、分支、完整 HEAD、远端和改动；没有源码才在自选新目录 clone，不覆盖旧项目。按指南检查 Python 3.13 x64、Chrome、依赖与更新器，报告可维护、可构建、可运行的证据和缺项。不要复制凭证、浏览器资料或真实队列，也不要因接手自动启动业务或发布程序。程序维护、真实上传/投稿和生产发布按我后续明确任务执行；需要上传更新时使用第5节的文件/目录映射与第7节的隔离验收。
+
+接手顺序：第1节取得 Git 源码 → 第2节建立本机环境/确认数据边界 → HANDOFF 的程序模块与执行链 → 第3—4节构建和组包 → 第5—7节发布与验收。只需安装使用的用户从 README 和完整 ZIP 开始，维护人员必须有 Git 工作副本。
+
+| 要拿到的内容 | 入口/状态 |
+| --- | --- |
+| 持续维护源码、最新文档 | 本仓库 `main`；接手时用 `git ls-remote` 核对，不能把文档中的旧 HEAD 当永久最新值。 |
+| 已发布的 GitHub 程序 | [v1.0.17](https://github.com/nmrsz645-bit/shangchuanXtougao/releases/tag/v1.0.17)，发行提交 `6071b4f6a640e3b27b78e302cff6a33fbeb57e6d`；`BUILD-INFO.json` 记录来源，`VERIFICATION.json` 记录既有验收。 |
+| 未合入 main 的历史发布辅助脚本 | [固定备份快照](https://github.com/nmrsz645-bit/shangchuanXtougao/tree/c5ccaa2d4c0a805a50aa4b4879133fb114e9b819/backups/existing-safe-20261031)；先核对 MANIFEST/SHA256 并读 README。本机路径是占位符，HTTP 回环脚本是历史实验，不能直接作为正式升级验收工具。 |
+| 客户端正式更新与网站下载 | 目前仍为 2026-10-28 OSS 1.0.17；与上述 GitHub 同版本包不同，准确映射见第5—6节。 |
+
+新电脑接手完成时，应给出本机源码绝对路径、分支/完整 HEAD/安全远端、已保存改动、实际解释器与依赖、测试/构建/启动各自的证据和缺项。只查看文档不能宣称新电脑已能真实上传。旧电脑配置、任务、素材的迁移是另外一项工作；每台新电脑本人登录和重新授权。
 
 ## 1. 仓库、分支与版本关系
 
@@ -23,7 +40,7 @@ git ls-remote origin refs/heads/main refs/tags/v1.0.17
 ## 2. 新电脑安装与本地数据边界
 
 普通用户：完整解压 GitHub/OSS 完整包，安装正式版 Google Chrome，从包根 **Start.cmd** 启动；不需要另装 Python。直接启动 app 内 EXE 会绕过检查更新。
-开发电脑：Windows 10/11 x64、Git、Python **3.13.15 x64**。本次直接依赖固定为 Playwright 1.62.0、keyring 25.7.0、pytest 8.4.2、PyInstaller 6.22.2、setuptools 84.0.0。
+开发电脑：Windows 10/11 x64、Git、Python **3.13.15 x64**。本次直接依赖固定为 Playwright 1.62.0、keyring 25.7.0、pytest 8.4.2、PyInstaller 6.22.2、setuptools 84.0.0。发布命令示例还使用 GitHub CLI `gh`；它不是程序运行依赖，未安装时先准备 CLI 或由本人从对应 Release 页面下载相同附件并验哈希。
 
 ```powershell
 py -3.13 -m venv .venv
@@ -45,6 +62,7 @@ $python = Join-Path $PWD '.venv\Scripts\python.exe'
 | 视频、任务目录及回滚副本 | 原样保护。授权迁移媒体后重新选择新路径；不因路径变化删队列、媒体或 app.previous。 |
 
 安全空模板是 `examples/shared-feishu.example.json`、`api-settings.example.json`、`upload-settings.example.json`；通过界面保存真实配置，不直接用模板覆盖已有配置。
+接手后若另获真实上传授权，先阅读 README“视频上传”：程序前序移动源文件，核验上传成功后删除目标视频，不自动留原片副本；媒体留存须在运行前另行安排独立备份。
 
 ## 3. 版本、更新器依赖与完整构建
 
@@ -142,7 +160,25 @@ Bucket **luotuoruanjiangengx**，地域华北2（北京），外网 HTTPS 基址
 | `updates/shang-chuan-tou-gao-zhong-xin/latest.js` | 网站卡片元数据，不是客户端 JSON。 |
 
 两份 JSON 均含 version、url（HTTPS app.zip）、sha256（app ZIP）、notes、files。files 至少覆盖 `version.json`、`上传投稿中心.exe`、`Start-App.cmd`、`_internal/python313.dll`；值均为相应文件 SHA256。
-2026-10-31 两份正式 JSON 实际均为 1.0.17，JSON 文件本身的 SHA256=`f11b5d890a8773c00f4155e90b15a56f7028bab4bb23cc5b9a3fb9a1e4c1cdd6`（64位，不是 app.zip 散列），指向 2026-10-28 OSS 构建，不是 GitHub 同版本维护包。
+2026-11-01 只读回查两份正式 JSON 实际均为 1.0.17，JSON 文件本身的 SHA256=`f11b5d890a8773c00f4155e90b15a56f7028bab4bb23cc5b9a3fb9a1e4c1cdd6`（64位，不是 app.zip 散列），指向 2026-10-28 OSS 构建，不是 GitHub 同版本维护包。
+
+<a id="oss-upload"></a>
+
+### 5.1 OSS 控制台实际选什么、上传到哪里
+
+未来发布选定新版本后，把下表所有 `<新版本>` 换成同一个真实版本号；它不是让本次交接升级版本。先完成第3—4节，文件从 `$job/oss-payload/` 取得，不能直接拿旧 app.zip 改名冒充新构建。
+
+| 本地选择文件 | “指定目录”填写值（不含 bucket 或网址） | 上传后的用途 |
+| --- | --- | --- |
+| `app.zip` | `updates/shang-chuan-tou-gao-zhong-xin/<新版本>/` | 应用层包；新版本不可变，首先上传。 |
+| `shang-chuan-tou-gao-zhong-xin-<新版本>.zip` | `packages/` | 新用户完整包；首先上传并与 app.zip 一起回读验散列。 |
+| `latest.json` | `updates/shang-chuan-tou-gao-zhong-xin/<新版本>/` | HTTPS 候选清单；供隔离副本验收，尚未激活旧客户端。 |
+| **同一份** `latest.json` | **分别** `updates/shang-chuan-tou-gao-zhong-xin/` 和 `updates/shang-chuan-tou-gao-zhong-xin/1.0.0/` | 候选升级通过后才切换的两份正式入口；内容必须一致，1.0.0 路径保持不变。 |
+| `latest.js` | `updates/shang-chuan-tou-gao-zhong-xin/` | 网站动态版本/完整包地址，不能替代客户端 JSON；正式切换时再上传。 |
+
+控制台操作：进入上方指定 Bucket → 文件列表 → 上传文件 → 指定目录 → 填本行目录 → 扫描文件选择本行文件 → 核对文件名/目录 → 保持“继承 Bucket”及外网域名 → 上传文件 → 等任务列表显示上传成功。不可变包使用新 key；只有经授权的正式清单切换才覆盖已有两份 JSON/latest.js，不扩大 ACL 或更换 bucket。
+
+**仅有控制台“上传成功”还不算发布完成。** 还须公网下载验字节、候选隔离升级、最后切换正式入口及再次旧版验收。只上传 app.zip、只 push 源码或只发 GitHub Release，都不会使现有客户端改用新包。
 
 未来获生产授权后的**手工发布顺序**（仓库没有已验证的 OSS 自动上传脚本）：
 
@@ -177,6 +213,10 @@ Bucket **luotuoruanjiangengx**，地域华北2（北京），外网 HTTPS 基址
 隔离更新命令需在隔离安装根目录运行：`.\updater\UpdateAgent.exe --silent --check updater\updater-config.json`；这里只说明调用形式，本阶段未执行。
 测试样本使用合成数据，不能对客户安装、实际 Chrome 登录态或真实任务做发布试验。完整包启动检查可在无凭证副本完成；真实上传/投稿另需授权。
 更新器接受 HTTPS；HTTP 回环不能替代该实际更新路径。程序版本相同或回退到低版本时，旧客户端不会被当作升级处理，不能靠把清单 version 改小实现已升级用户降级。
+
+隔离升级验收的具体准备：下载并校验受支持旧版的干净完整包，在全新可写目录解压；不复制真实安装。记录原 updater/配置/程序散列，只在隔离副本写入无凭证的合成配置、队列、日志、浏览器资料标记，并记录散列。候选验收只改副本的 manifestUrl，保留原件；正式验收另解压一份旧包，使用原正式配置。两种验收都从各自隔离安装根调用上面的更新器命令，避免根 Start.cmd 随后启动业务 GUI。
+
+检查退出码为0、app/version.json 为目标版本、全部新程序文件与候选一致、合成标记全部保留、updater 未变、正式验收配置未变，并保留 app.previous。确认旧版号小于目标；同版本不替换不算升级失败。任一检查缺失时，分别记录通过和未验收项，不切换正式入口试错。现有历史脚本只是备份，不能不经路径/基准核对直接搬到新电脑执行。
 
 回滚时先停止新发布入口：恢复事先保存的两份正式 JSON、latest.js 和本站本卡静态字段一致性，只在对应生产回滚授权下执行；保留新旧不可变 ZIP。已升级客户端需正常停任务、备份数据后，按验证过的独立 app.previous/旧完整包手工恢复并核对状态，不删除运行数据、不强杀任务。系统已有恢复逻辑并不证明任意数据迁移可自动回滚。
 共享 [验收与回滚](https://github.com/nmrsz645-bit/software-download-center/blob/docs-cross-pc-handoff/docs/PUBLISHING.md#verify-rollback) 还列出证据要求。
