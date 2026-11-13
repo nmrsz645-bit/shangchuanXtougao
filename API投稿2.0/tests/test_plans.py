@@ -62,7 +62,7 @@ class PlanTests(unittest.TestCase):
 
     def test_auto_proxy_raises_each_limit_only_after_all_projects_fill_it(self):
         from desktop_posting.models import ProjectRef
-        from desktop_posting.plans import add_plan_entry, create_plan, set_auto_proxy_enabled, sync_auto_proxy_plan
+        from desktop_posting.plans import add_plan_entry, auto_proxy_enabled, create_plan, sync_auto_proxy_plan
         from desktop_posting.storage import StateStore
 
         with tempfile.TemporaryDirectory() as folder:
@@ -71,9 +71,8 @@ class PlanTests(unittest.TestCase):
             add_plan_entry(store, plan_id, ProjectRef("a", "A", "p1", "P1"), 80)
             add_plan_entry(store, plan_id, ProjectRef("a", "A", "p2", "P2"), 80)
 
-            self.assertEqual((None, False), sync_auto_proxy_plan(store, plan_id, "2026-08-19"))
-            self.assertEqual([80, 80], [row[7] for row in store.list_plan_entries(plan_id)])
-            set_auto_proxy_enabled(store, plan_id, True, "2026-08-19")
+            self.assertTrue(auto_proxy_enabled(store, plan_id))
+            self.assertEqual((10, True), sync_auto_proxy_plan(store, plan_id, "2026-08-19"))
             self.assertEqual([10, 10], [row[7] for row in store.list_plan_entries(plan_id)])
             previous = 0
             for limit, next_limit in ((10, 20), (20, 30), (30, 40), (40, 50), (50, 60), (60, 70), (70, 83)):
@@ -101,24 +100,27 @@ class PlanTests(unittest.TestCase):
 
     def test_auto_proxy_startup_catchup_and_plans_are_independent(self):
         from desktop_posting.models import ProjectRef
-        from desktop_posting.plans import add_plan_entry, create_plan, set_auto_proxy_enabled, sync_auto_proxy_plans
+        from desktop_posting.plans import add_plan_entry, auto_proxy_enabled, create_plan, set_auto_proxy_enabled, sync_auto_proxy_plans
         from desktop_posting.storage import StateStore
 
         with tempfile.TemporaryDirectory() as folder:
             store = StateStore(Path(folder)); store.initialize()
             first = create_plan(store, "First")
             second = create_plan(store, "Second")
-            for plan_id in (first, second):
+            manual = create_plan(store, "Manual")
+            for plan_id in (first, second, manual):
                 add_plan_entry(store, plan_id, ProjectRef("a", "A", f"p{plan_id}", "P"), 80)
             for _ in range(40):
                 store.increment_project_count(first, f"p{first}", "2026-08-19")
 
-            set_auto_proxy_enabled(store, first, True, "2026-08-19")
-            set_auto_proxy_enabled(store, second, True, "2026-08-19")
+            set_auto_proxy_enabled(store, manual, False, "2026-08-19")
+            store = StateStore(Path(folder))
             sync_auto_proxy_plans(store, "2026-08-19")
 
             self.assertEqual(50, store.list_plan_entries(first)[0][7])
             self.assertEqual(10, store.list_plan_entries(second)[0][7])
+            self.assertFalse(auto_proxy_enabled(store, manual))
+            self.assertEqual(80, store.list_plan_entries(manual)[0][7])
 
     def test_existing_auto_proxy_keeps_same_day_stage_and_counts(self):
         from desktop_posting.models import ProjectRef

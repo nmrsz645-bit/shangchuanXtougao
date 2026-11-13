@@ -1,10 +1,10 @@
-# 上传 + 投稿中心 1.0.19 维护交接
+# 上传 + 投稿中心 1.0.20 维护交接
 
 ## 先读与版本边界
 
 - 用户操作先读 README.md；维护先读本文件和 AGENTS.md，再打开任务涉及的模块。
 - 跨电脑安装、实际构建命令、两处正式 JSON、OSS key、网站卡片/catalog、验收与回滚统一维护在 [docs/RELEASE-GUIDE.md](https://github.com/nmrsz645-bit/shangchuanXtougao/blob/main/docs/RELEASE-GUIDE.md)；生产操作须另有对应授权。
-- 产品版本来自 `API投稿2.0/version.json`。**1.0.19** 在 `storage.py` 通过 SQLite 事务同步自动代理档位与项目额度，`run_once.py` 跨日时按新日重选项目。视频页由 `tracking.py` 按日期统计待补写，统计文件读取失败时保留原记录。**1.0.18** 的长稿页拆列解析仍由 `posting_service.py` 处理。发布状态以 OSS 正式清单和对应验收记录为准。
+- 产品版本来自 `API投稿2.0/version.json`。**1.0.20** 在 `storage.py` 对尚无模式记录的方案默认启用自动代理，保留明确关闭的记录。后台升档后，`desktop_app.py` 刷新方案额度。**1.0.19** 在 `storage.py` 通过 SQLite 事务同步档位与项目额度，`run_once.py` 跨日时按新日重选项目，`tracking.py` 按日期统计待补写并保护原记录。**1.0.18** 的长稿页拆列解析由 `posting_service.py` 处理。发布状态以 OSS 正式清单和对应验收记录为准。
 - 仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao`，正式分支 `main`。
 - 上传完成/IAA 修复源码基线：`a0ada8ea1a6637aad4c98febd713addc53683380`。
 - 2026-10-31 GitHub 维护发行仍为 1.0.17：清空新用户预填账号、完善构建和文档；准确发行提交由不可变 `v1.0.17` 标签与包内 `BUILD-INFO.json.sourceCommit` 给出。

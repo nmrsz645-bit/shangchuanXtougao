@@ -98,7 +98,10 @@ class DesktopApp:
         buttons = ttk.Frame(tab); buttons.pack(fill="x", padx=10); ttk.Button(buttons, text="上移", command=lambda: self.move_selected(-1)).pack(side="left"); ttk.Button(buttons, text="下移", command=lambda: self.move_selected(1)).pack(side="left", padx=4); ttk.Button(buttons, text="移除项目", command=self.remove_selected).pack(side="left", padx=4)
         self.plan_entries.bind("<ButtonPress-1>", self.begin_drag); self.plan_entries.bind("<ButtonRelease-1>", self.finish_drag); self.plan_entries.bind("<Double-1>", self.edit_limit)
         self.active_plan_id = int(self.store.get_state("active_plan_id", "0") or 0) or None
-        self.drag_entry_id = None; self.refresh_plan_list(); self.refresh_plan_speed(); self.refresh_auto_proxy()
+        self.drag_entry_id = None
+        self._displayed_plan_entries = None
+        self.refresh_plan_list()
+        self.refresh_entries()
 
     def new_plan(self):
         try: self.active_plan_id = create_plan(self.store, self.plan_name.get()); self.store.set_state("active_plan_id", self.active_plan_id); self.refresh_plan_list(); self.refresh_entries(); messagebox.showinfo("完成", "方案已创建")
@@ -138,11 +141,16 @@ class DesktopApp:
         phase_limit, _ = sync_auto_proxy_plan(self.store, self.active_plan_id, date.today().isoformat())
         return phase_limit or 1
 
-    def refresh_entries(self):
+    def refresh_entries(self, *, only_if_changed=False):
+        rows = self.store.list_plan_entries(self.active_plan_id) if self.active_plan_id else []
+        if only_if_changed and rows == self._displayed_plan_entries:
+            return
         self.plan_entries.delete(*self.plan_entries.get_children())
-        if not self.active_plan_id: return
-        self.refresh_plan_speed(); self.refresh_auto_proxy()
-        for row in self.store.list_plan_entries(self.active_plan_id): self.plan_entries.insert("", "end", iid=str(row[0]), values=(row[5], row[3], row[7]))
+        self.refresh_plan_speed()
+        self.refresh_auto_proxy()
+        for row in rows:
+            self.plan_entries.insert("", "end", iid=str(row[0]), values=(row[5], row[3], row[7]))
+        self._displayed_plan_entries = rows
 
     def add_selected_project(self):
         selected = self.catalog.selection()
@@ -172,6 +180,8 @@ class DesktopApp:
         if self.plan_entries.identify_column(event.x) != "#3": return
         item_id = self.plan_entries.identify_row(event.y)
         if not item_id: return
+        if self.auto_proxy.get():
+            return messagebox.showinfo("自动代理已启用", "取消勾选自动代理后可手动设置每日投稿数量。")
         x, y, width, height = self.plan_entries.bbox(item_id, "#3")
         editor = ttk.Entry(self.plan_entries, width=8); editor.insert(0, self.plan_entries.item(item_id, "values")[2]); editor.place(x=x, y=y, width=width, height=height); editor.focus_set(); editor.select_range(0, "end")
         def save(_=None):
@@ -217,9 +227,8 @@ class DesktopApp:
     def _refresh_runtime_status(self):
         try:
             today = date.today().isoformat()
-            changed_plan_ids = sync_auto_proxy_plans(self.store, today)
-            if self.active_plan_id in changed_plan_ids:
-                self.refresh_entries()
+            sync_auto_proxy_plans(self.store, today)
+            self.refresh_entries(only_if_changed=True)
             plan_id = int(self.store.get_state("active_plan_id", "0") or 0)
             current_book = self.store.get_state("runtime_current_book", "")
             current_account = self.store.get_state("runtime_current_advertiser_id", "")

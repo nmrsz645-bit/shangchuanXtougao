@@ -192,7 +192,7 @@ class StateStore:
             connection.close()
 
     def auto_proxy_enabled(self, plan_id):
-        return self.get_state(_auto_proxy_key(plan_id, "enabled"), "0") == "1"
+        return self.get_state(_auto_proxy_key(plan_id, "enabled"), "1") == "1"
 
     def sync_auto_proxy_plan(self, plan_id, today, limits, *, enabled=None):
         enabled_key = _auto_proxy_key(plan_id, "enabled")
@@ -209,7 +209,7 @@ class StateStore:
             ))
             if enabled is not None:
                 connection.execute(UPSERT_STATE_SQL, (enabled_key, "1" if enabled else "0"))
-            elif state.get(enabled_key) != "1":
+            elif state.get(enabled_key, "1") != "1":
                 return None, False
             if enabled is False:
                 connection.commit()

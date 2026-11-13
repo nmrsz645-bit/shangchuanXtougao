@@ -63,6 +63,7 @@ class RunOnceIntegrationTests(unittest.TestCase):
         def target(entries, _, params, configured_app_id=""):
             self.assertEqual("book_id=r1&chapter_id=1", params)
             self.assertEqual(self.app_id, configured_app_id)
+            self.assertEqual(10, entries[0].daily_limit)
             return entries[0], project, template
 
         def create(_, body, __, suffix, ___):
@@ -145,10 +146,12 @@ class RunOnceIntegrationTests(unittest.TestCase):
 
     def test_full_quota_retries_at_midnight_following_the_quota_date(self):
         import desktop_posting.run_once as runner
+        from desktop_posting.plans import set_auto_proxy_enabled
 
         quota_day = date(2026, 11, 14)
         with tempfile.TemporaryDirectory() as folder:
             base_dir, store, plan_id = self.make_base_dir(folder)
+            set_auto_proxy_enabled(store, plan_id, False, quota_day.isoformat())
             store.update_entry_limit(store.list_plan_entries(plan_id)[0][0], 1)
             store.increment_project_count(plan_id, "2001", quota_day.isoformat())
             with (
