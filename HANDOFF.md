@@ -1,14 +1,14 @@
-# Codex 维护交接：上传 + 投稿中心 1.0.17
+# 上传 + 投稿中心 1.0.18 维护交接
 
 ## 先读与版本边界
 
 - 用户操作先读 README.md；维护先读本文件和 AGENTS.md，再打开任务涉及的模块。
 - 跨电脑安装、实际构建命令、两处正式 JSON、OSS key、网站卡片/catalog、验收与回滚统一维护在 [docs/RELEASE-GUIDE.md](https://github.com/nmrsz645-bit/shangchuanXtougao/blob/main/docs/RELEASE-GUIDE.md)；生产操作须另有对应授权。
-- 产品版本来自 `API投稿2.0/version.json`，当前为 **1.0.17**；上传子模块 pyproject 的 0.1.0 是内部包版本，不能据此判断产品版本。
+- 产品版本来自 `API投稿2.0/version.json`。**1.0.18** 在 `posting_service.py` 增加长稿页拆列解析，沿用现有链接生成器。发布状态以 OSS 正式清单和对应验收记录为准。
 - 仓库：`https://github.com/nmrsz645-bit/shangchuanXtougao`，正式分支 `main`。
 - 上传完成/IAA 修复源码基线：`a0ada8ea1a6637aad4c98febd713addc53683380`。
 - 2026-10-31 GitHub 维护发行仍为 1.0.17：清空新用户预填账号、完善构建和文档；准确发行提交由不可变 `v1.0.17` 标签与包内 `BUILD-INFO.json.sourceCommit` 给出。
-- 不把此维护发行误称为 OSS 自动更新版本的新发布。OSS 2026-10-28 包和清单没有被本轮替换，二者字节/散列不同。
+- 2026-10-28 的 OSS 1.0.17 和 2026-10-31 的 GitHub 1.0.17 是两份不同的完整包。恢复旧版时按原通道选包，并核对 SHA256。
 
 <a id="new-codex"></a>
 

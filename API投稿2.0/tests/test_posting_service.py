@@ -104,6 +104,21 @@ class PostingServiceTests(unittest.TestCase):
             generate(path, parsed_params),
         )
 
+    def test_long_manuscript_accepts_campaign_parameters_in_a_separate_column(self):
+        from desktop_posting.posting_service import parse_program_fields
+
+        path = "pages/longManuscript/longManuscript"
+        params = (
+            "ad_campaign=__PROMOTION_ID__&ad_campaign_name=__PROMOTION_NAME__&"
+            "ad_group=__PROJECT_ID__&ad_group_name=__PROJECT_NAME__&clickid=__CLICKID__&"
+            "id=12345&utm_division=&utm_medium=commercial_dist&utm_source=ttxxl&"
+            "work_id=12345&zxh_adid=67890"
+        )
+        self.assertEqual((path, params), parse_program_fields(params, path))
+        params_with_question = params.replace("__PROMOTION_NAME__", "A?B")
+        self.assertEqual((path, params_with_question), parse_program_fields(params_with_question, path))
+        self.assertEqual((path, params_with_question), parse_program_fields(f"{path}?{params_with_question}", path))
+
     def test_req_id_novel_link_uses_its_app_id_despite_an_old_global_setting(self):
         from desktop_posting.microapp_link import choose_app_id
 

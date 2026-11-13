@@ -30,6 +30,9 @@ def test_clean_package_has_launchers_docs_and_no_runtime_files(tmp_path, monkeyp
     monkeypatch.setattr(builder, "UPDATER_SHA256", hashlib.sha256(updater.read_bytes()).hexdigest())
     output = tmp_path / "release"
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=builder.ROOT, text=True).strip()
+    expected_version = json.loads(subprocess.check_output(
+        ["git", "show", f"{commit}:API投稿2.0/version.json"], cwd=builder.ROOT
+    ))["version"]
     full = builder.assemble(app, updater, output, commit)
     assert verified == [(app, commit)]
     with zipfile.ZipFile(full) as z:
@@ -37,7 +40,7 @@ def test_clean_package_has_launchers_docs_and_no_runtime_files(tmp_path, monkeyp
         assert {"Start.cmd", "README.md", "HANDOFF.md", "BUILD-INFO.json",
                 "updater/UpdateAgent.exe", "updater/updater-config.json",
                 "app/version.json", "app/Start-App.cmd"} <= names
-        assert json.loads(z.read("app/version.json"))["version"] == "1.0.17"
+        assert json.loads(z.read("app/version.json"))["version"] == expected_version
         assert "TIMEOFF.md" not in names
         config = json.loads(z.read("updater/updater-config.json"))
         assert config["preservePaths"] == ["*"]

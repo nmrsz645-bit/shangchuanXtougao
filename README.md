@@ -1,4 +1,4 @@
-# 上传 + 投稿中心 1.0.17
+# 上传 + 投稿中心 1.0.18
 
 Windows 本地桌面工具：从飞书读取任务，浏览器上传视频素材，通过巨量千川 API 投稿。
 本仓库包含整合界面、API 投稿、视频上传模块、离线测试和打包脚本。
@@ -7,8 +7,8 @@ Windows 本地桌面工具：从飞书读取任务，浏览器上传视频素材
 
 ## 安装与启动
 
-1. 从本仓库 [GitHub Releases](https://github.com/nmrsz645-bit/shangchuanXtougao/releases/tag/v1.0.17) 下载 `shang-chuan-tou-gao-zhong-xin-1.0.17-github-windows-x64.zip`；普通用户不要下载 Source code ZIP 代替程序包。
-2. 根据 Release 的 `SHA256SUMS.txt`，用 PowerShell `Get-FileHash -Algorithm SHA256 <ZIP路径>` 核对文件。
+1. 从 [骆驼软件中心](https://download.luotuoqiluotuozhaoma.com/) 下载「上传 + 投稿中心」完整包，或从 [GitHub Releases](https://github.com/nmrsz645-bit/shangchuanXtougao/releases) 选择对应版本的 Windows 完整包。
+2. 用 PowerShell `Get-FileHash -Algorithm SHA256 <ZIP路径>` 核对发布方提供的校验值。
 3. 完整解压到可写的新目录，例如 `D:\Apps\UploadPostingCenter`；Windows 10/11 x64，无需安装 Python。
 4. 安装正式版 Google Chrome；联网访问飞书、巨量和更新服务。
 5. **双击完整包根目录 `Start.cmd`**。它先同步运行 `updater\UpdateAgent.exe`，再调用 `app\Start-App.cmd` 启动程序。直接打开 EXE 会绕过更新检查。
@@ -18,12 +18,11 @@ Windows 本地桌面工具：从飞书读取任务，浏览器上传视频素材
 
 ## 发行与升级
 
-- 产品版本保持 **1.0.17**。2026-10-31 GitHub 维护发行补齐文档和构建方法，并清空新安装的预填广告账号地址；已有用户保存的地址不变。
-- 此包与 2026-10-28 OSS 发行使用不同文件名和散列；OSS 旧包、下载站和线上更新清单没有被替换。
-- 线上更新仍走既有 OSS 通道。更新器使用 `updater/updater-config.json` 中的 HTTPS 清单，不会从 GitHub 自动取此维护包；同版本不应被当作升级强制覆盖。
-- 1.0.16 用户联网后通过根目录 `Start.cmd` 可检查线上 1.0.17 更新。更新前先结束任务并正常退出程序，运行中的窗口不会自动换代码。
+- **1.0.18** 支持长稿页拆列投稿。复制表的「活动页」或投稿表的「启动页」填写 `pages/longManuscript/longManuscript`，在「程序链接」填写参数串。生成链接时保留参数值、宏占位符和空值。
+- `1.0.17` 用户结束任务并正常退出后，可用原安装目录的根 `Start.cmd` 联网检查更新。实际可用版本由 OSS 正式清单决定。
+- 如需找回旧版，可从 [1.0.17 完整包](https://luotuoruanjiangengx.oss-cn-beijing.aliyuncs.com/packages/shang-chuan-tou-gao-zhong-xin-1.0.17.zip) 取得原 OSS 发行。保留当前安装及业务数据备份后，再按发布指南恢复。
 - 旧版升级保留现有配置和业务状态；修改安装目录前先做完整备份，不要用干净发行包覆盖掉个人数据或 `app.previous`。
-- 要使用本 GitHub 维护发行，请下载并完整解压到新目录。每台新电脑自行配置、授权和登录；不要复制别人的凭证。
+- 新装请完整解压到新目录。每台新电脑自行配置、授权和登录。
 
 ## 首次配置
 

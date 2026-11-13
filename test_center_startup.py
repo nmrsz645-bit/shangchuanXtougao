@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from center_startup import is_enabled, set_enabled
@@ -25,7 +26,8 @@ def test_source_launcher_prefers_the_project_virtual_environment():
 
 
 def test_center_title_reads_the_local_version_file():
-    assert app_version(ROOT) == "1.0.17"
+    expected = json.loads((ROOT / "API投稿2.0/version.json").read_text(encoding="utf-8"))
+    assert app_version(ROOT) == expected["version"]
 
 
 def test_center_title_reads_the_packaged_version_file(tmp_path):

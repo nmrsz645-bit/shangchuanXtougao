@@ -17,6 +17,9 @@ def parse_program_fields(program_link, start_page):
         return path.strip(), params.strip()
     if len(lines) >= 2:
         return lines[0], lines[1]
+    # A question mark inside a separate parameter value is part of that value.
+    if fallback in ("pages/novel_plugin/index", "pages/longManuscript/longManuscript") and "=" in text.partition("?")[0]:
+        return fallback, text
     if "?" in text:
         path, params = text.split("?", 1)
         return path.strip(), params.strip()
@@ -26,12 +29,6 @@ def parse_program_fields(program_link, start_page):
             return text, params.strip()
         if "=" in fallback:
             return text, fallback
-    # Newer Sheet1 rows keep the mini-program path in 启动页 and put the
-    # complete query string (which may start with req_id) in 程序链接.
-    # Treat that pair as one program link before applying the legacy
-    # book_id-prefix rule below.
-    if fallback == "pages/novel_plugin/index" and "=" in text:
-        return fallback, text
     if text.startswith("book_id=") or text.startswith("bookId="):
         return "pages/novel_plugin/index", text
     raise ValueError(f"unsupported program link format: {text}")

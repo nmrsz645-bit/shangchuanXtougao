@@ -1,6 +1,6 @@
 # 新 Windows 电脑接手、程序更新与网站发布指南
 
-核对日期：2026-11-01。产品当前版本 **1.0.17**；本次为另一台电脑 Codex 补齐接手说明，下面涉及生产上传、Release 和网站的步骤均为**未来另获对应授权后的操作说明，本阶段没有执行**。
+2026-11-13 源码版本为 **1.0.18**，包含长稿页拆列投稿。正式通道版本以两份 OSS 清单为准，发布与升级证据按第7节分别核对。
 `git push` 源码不等于给客户端推送更新，也不等于发布网站。
 
 ## 0. 给另一台电脑 Codex 的接手指令
@@ -14,9 +14,9 @@
 | 要拿到的内容 | 入口/状态 |
 | --- | --- |
 | 持续维护源码、最新文档 | 本仓库 `main`；接手时用 `git ls-remote` 核对，不能把文档中的旧 HEAD 当永久最新值。 |
-| 已发布的 GitHub 程序 | [v1.0.17](https://github.com/nmrsz645-bit/shangchuanXtougao/releases/tag/v1.0.17)，发行提交 `6071b4f6a640e3b27b78e302cff6a33fbeb57e6d`；`BUILD-INFO.json` 记录来源，`VERIFICATION.json` 记录既有验收。 |
+| GitHub 程序与历史版本 | [Releases](https://github.com/nmrsz645-bit/shangchuanXtougao/releases)。历史 `v1.0.17` 发行提交为 `6071b4f6a640e3b27b78e302cff6a33fbeb57e6d`，包内 `BUILD-INFO.json` 记录来源。 |
 | 未合入 main 的历史发布辅助脚本 | [固定备份快照](https://github.com/nmrsz645-bit/shangchuanXtougao/tree/c5ccaa2d4c0a805a50aa4b4879133fb114e9b819/backups/existing-safe-20261031)；先核对 MANIFEST/SHA256 并读 README。本机路径是占位符，HTTP 回环脚本是历史实验，不能直接作为正式升级验收工具。 |
-| 客户端正式更新与网站下载 | 目前仍为 2026-10-28 OSS 1.0.17；与上述 GitHub 同版本包不同，准确映射见第5—6节。 |
+| 客户端正式更新与网站下载 | 从第5—6节的固定地址核对在线版本。2026-10-28 的 OSS 1.0.17 原版保留独立文件名与校验值。 |
 
 新电脑接手完成时，应给出本机源码绝对路径、分支/完整 HEAD/安全远端、已保存改动、实际解释器与依赖、测试/构建/启动各自的证据和缺项。只查看文档不能宣称新电脑已能真实上传。旧电脑配置、任务、素材的迁移是另外一项工作；每台新电脑本人登录和重新授权。
 
@@ -30,8 +30,8 @@ git log -1 --format='%H %s'
 git ls-remote origin refs/heads/main refs/tags/v1.0.17
 ```
 
-- `main` 是本项目维护分支；当前正式 GitHub Release 是 [v1.0.17](https://github.com/nmrsz645-bit/shangchuanXtougao/releases/tag/v1.0.17)，程序构建提交为 `6071b4f6a640e3b27b78e302cff6a33fbeb57e6d`。其后 main 的纯文档提交不代表程序升级。
-- 要复现这份已发布程序，在干净克隆中 `git switch --detach v1.0.17`；要继续修改，在 main 上新建自己的 `codex/` 分支，先检查/保留其他改动。
+- `main` 是维护分支。复现某个发行包时核对其标签和 `BUILD-INFO.json.sourceCommit`。历史 [v1.0.17](https://github.com/nmrsz645-bit/shangchuanXtougao/releases/tag/v1.0.17) 固定在 `6071b4f6a640e3b27b78e302cff6a33fbeb57e6d`。
+- 复现 GitHub 1.0.17 时可在干净克隆中运行 `git switch --detach v1.0.17`。开发分支从当前 main 建立，先检查并保留已有改动。
 - 没有预设的独立客户端测试通道；候选包只能放全新本地目录、独立版本化 HTTPS 候选清单，并在隔离安装副本验证。不得用正式两处 JSON 作试验。
 - GitHub 维护发行和 2026-10-28 OSS 发行都叫 1.0.17，但不是同一 ZIP。GitHub 包补齐文档并清空新用户预填账号；不应覆盖或假装升级原 OSS 同版本包。
 - Release 内 README/HANDOFF 是该次发行快照；新接手说明以 main 的本指南为准，不替换已发布附件或重打旧标签来追平文档。
@@ -67,7 +67,7 @@ $python = Join-Path $PWD '.venv\Scripts\python.exe'
 ## 3. 版本、更新器依赖与完整构建
 
 真实产品版本字段：**`API投稿2.0/version.json` 的 `version`**。冻结程序优先读 app 同级 version.json，再回退该源码位置；上传子包 pyproject 的 0.1.0 不是产品版本。
-下一次真实程序升级才修改产品版本，连同对应源码、测试、文档提交；本轮不改 1.0.17。不能为了发文档升版本，也不能覆盖已有版本的 ZIP/tag。
+程序升级时一并提交产品版本、对应源码、测试和文档。每个已发布版本保留原 ZIP 与标签，新程序使用新的版本化文件名。
 
 更新器是外部 .NET CLR 程序，当前 26,624 字节，SHA256：
 `68721ebefcdebbe7b4133424d9e432bcfa0372f7a015ecf54d5aeeb5a6493316`。
@@ -198,7 +198,7 @@ Bucket **luotuoruanjiangengx**，地域华北2（北京），外网 HTTPS 基址
 | 映射 | 本项目实际值 |
 | --- | --- |
 | 静态版本元素 | `id="shangchuan-version"`；文字 `当前版本：v<版本> · Windows 64 位 · 国内直连`。 |
-| 静态完整包链接 | `id="shangchuan-download"` 的 href 与按钮版本文字；当前指向 OSS 标准完整包 1.0.17。 |
+| 静态完整包链接 | `id="shangchuan-download"` 的 href 与按钮版本文字，指向对应版本的 OSS 完整包。 |
 | 运行时脚本 | 旧 OSS 基址下 `updates/shang-chuan-tou-gao-zhong-xin/latest.js`。 |
 | JS 对象 | `window.SHANG_CHUAN_TOU_GAO_ZHONG_XIN_LATEST`；version、fullPackageUrl，后者必须为 HTTPS 完整包 URL。 |
 | 应用函数 | `applyDownload('shangchuan-version','shangchuan-download',对象,'国内下载完整包')` 更新文字和链接；脚本失败保留静态兜底。 |
@@ -240,4 +240,4 @@ git push origin main
 - 业务配置字段：共享 `app_id`、`secret`、`task_sheet_url`、`copy_sheet_url`；API `qianchuan_app_id`、`qianchuan_secret`、`configured_advertiser_ids`、`mini_program_app_id`；上传 `material_url`、`source_dir`、`destination_dir`。飞书企业自建应用、自己的巨量开放平台应用/正式回调、小程序后台、本人目标素材账号分别提供对应值，详见 README“首次配置”及 examples。本人配置并授权，不能分发真实共享设置、回调、token、个人资料、内部聊天或浏览器资料。
 - 更多权限边界见共享 [credentials](https://github.com/nmrsz645-bit/software-download-center/blob/docs-cross-pc-handoff/docs/PUBLISHING.md#credentials)。公开文档只记录本产品和必要的公共下载站对象。
 - 缺口逐项保留：外部 .NET UpdateAgent 的确切原工程/源码/构建测试未找到；Windows CLR4 系列环境及正式版 Chrome 是运行依赖，裸新系统安装组合未穷尽验证；没有自动 OSS 上传脚本/统一网站 catalog 管线；线上 IAA 弹窗未现场触发验收；跨电脑真实业务数据迁移和升级后复杂状态回滚没有通用自动保证。
-- 本阶段只校验文档、路径、参数与线上只读对象；不重建程序、不修改版本、包、Release/tag、OSS 或网站。本指南中的生产步骤未执行。
+- 发布记录应列出实际执行的步骤及对应证据，分别记录构建、候选升级、正式通道和下载站的验收状态。
