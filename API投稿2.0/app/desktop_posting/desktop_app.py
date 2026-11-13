@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import date
 import time
 
-from .plans import add_plan_entry, auto_proxy_enabled, create_plan, move_entry, project_picker_label, set_auto_proxy_enabled, sync_auto_proxy_plan, sync_auto_proxy_plans, valid_daily_limit
+from .plans import AUTO_PROXY_LIMITS, add_plan_entry, auto_proxy_enabled, create_plan, move_entry, project_picker_label, set_auto_proxy_enabled, sync_auto_proxy_plan, sync_auto_proxy_plans, valid_daily_limit
 from .qianchuan_client import import_callback, is_access_token_expired_error, list_projects, refresh_if_needed, selected_advertiser_ids, latest_projects_by_name
 from .settings import AppSettings, load_settings, save_settings
 from .storage import StateStore
@@ -91,7 +91,8 @@ class DesktopApp:
         self.plan_speed_box.pack(side="left", padx=6)
         self.plan_speed_box.bind("<<ComboboxSelected>>", lambda _: self.save_plan_speed())
         self.auto_proxy = tk.BooleanVar(value=False)
-        ttk.Checkbutton(speed, text="自动代理（每日 40，满后 83）", variable=self.auto_proxy, command=self.save_auto_proxy).pack(side="left", padx=12)
+        limits_text = "→".join(str(limit) for limit in AUTO_PROXY_LIMITS)
+        ttk.Checkbutton(speed, text=f"自动代理（{limits_text}）", variable=self.auto_proxy, command=self.save_auto_proxy).pack(side="left", padx=12)
         pick = ttk.Frame(tab); pick.pack(fill="x", padx=10, pady=(0, 8)); ttk.Label(pick, text="选择项目").pack(side="left"); self.project_picker = ttk.Combobox(pick, state="readonly", width=55); self.project_picker.pack(side="left", padx=6); ttk.Button(pick, text="加入方案", command=self.add_picked_project).pack(side="left")
         self.plan_entries = ttk.Treeview(tab, columns=("project", "account", "limit"), show="headings"); self.plan_entries.heading("project", text="项目"); self.plan_entries.heading("account", text="账户"); self.plan_entries.heading("limit", text="每日投稿数量"); self.plan_entries.pack(fill="both", expand=True, padx=10, pady=8)
         buttons = ttk.Frame(tab); buttons.pack(fill="x", padx=10); ttk.Button(buttons, text="上移", command=lambda: self.move_selected(-1)).pack(side="left"); ttk.Button(buttons, text="下移", command=lambda: self.move_selected(1)).pack(side="left", padx=4); ttk.Button(buttons, text="移除项目", command=self.remove_selected).pack(side="left", padx=4)

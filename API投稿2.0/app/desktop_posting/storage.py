@@ -3,6 +3,16 @@ import sqlite3
 from pathlib import Path
 
 
+UPSERT_STATE_SQL = (
+    "INSERT INTO runtime_state(key,value) VALUES(?,?) "
+    "ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+)
+
+
+def _auto_proxy_key(plan_id, field):
+    return f"plan_auto_proxy_{field}_{int(plan_id)}"
+
+
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS plans (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -181,14 +191,68 @@ class StateStore:
         finally:
             connection.close()
 
-    def update_plan_limits(self, plan_id, daily_limit):
+    def auto_proxy_enabled(self, plan_id):
+        return self.get_state(_auto_proxy_key(plan_id, "enabled"), "0") == "1"
+
+    def sync_auto_proxy_plan(self, plan_id, today, limits, *, enabled=None):
+        enabled_key = _auto_proxy_key(plan_id, "enabled")
+        date_key = _auto_proxy_key(plan_id, "date")
+        limit_key = _auto_proxy_key(plan_id, "limit")
         connection = self._connect()
         try:
-            connection.execute(
+            # Read the stage only after taking the write lock. The UI and worker
+            # can both synchronize the plan, including around midnight.
+            connection.execute("BEGIN IMMEDIATE")
+            state = dict(connection.execute(
+                "SELECT key,value FROM runtime_state WHERE key IN (?,?,?)",
+                (enabled_key, date_key, limit_key),
+            ))
+            if enabled is not None:
+                connection.execute(UPSERT_STATE_SQL, (enabled_key, "1" if enabled else "0"))
+            elif state.get(enabled_key) != "1":
+                return None, False
+            if enabled is False:
+                connection.commit()
+                return None, False
+
+            saved_date = state.get(date_key, "")
+            saved_limit = state.get(limit_key) if saved_date else None
+            phase_limit = next((limit for limit in limits if str(limit) == saved_limit), limits[0])
+            if saved_date > today:
+                connection.commit()
+                return phase_limit, False
+
+            if saved_date and saved_date < today:
+                phase_limit = limits[0]
+            elif phase_limit < limits[-1]:
+                least_used = connection.execute("""
+                    SELECT MIN(COALESCE(counts.count, 0))
+                    FROM plan_entries AS entries
+                    LEFT JOIN daily_project_counts AS counts
+                        ON counts.plan_id=entries.plan_id
+                        AND counts.project_id=entries.project_id
+                        AND counts.counter_date=?
+                    WHERE entries.plan_id=?
+                """, (today, plan_id)).fetchone()[0]
+                if least_used is not None:
+                    stage = limits.index(phase_limit)
+                    while stage < len(limits) - 1 and least_used >= limits[stage]:
+                        stage += 1
+                    phase_limit = limits[stage]
+
+            changes = [
+                (key, value)
+                for key, value in ((date_key, today), (limit_key, str(phase_limit)))
+                if state.get(key) != value
+            ]
+            if changes:
+                connection.executemany(UPSERT_STATE_SQL, changes)
+            updated = connection.execute(
                 "UPDATE plan_entries SET daily_limit=? WHERE plan_id=? AND daily_limit<>?",
-                (daily_limit, plan_id, daily_limit),
+                (phase_limit, plan_id, phase_limit),
             )
             connection.commit()
+            return phase_limit, updated.rowcount > 0
         finally:
             connection.close()
 
@@ -209,7 +273,8 @@ class StateStore:
     def set_state(self, key, value):
         connection = self._connect()
         try:
-            connection.execute("INSERT INTO runtime_state(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, str(value))); connection.commit()
+            connection.execute(UPSERT_STATE_SQL, (key, str(value)))
+            connection.commit()
         finally:
             connection.close()
 
@@ -217,7 +282,7 @@ class StateStore:
         connection = self._connect()
         try:
             connection.executemany(
-                "INSERT INTO runtime_state(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                UPSERT_STATE_SQL,
                 [(key, str(value)) for key, value in values.items()],
             )
             connection.commit()

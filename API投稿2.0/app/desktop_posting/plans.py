@@ -1,55 +1,19 @@
 from .models import PlanEntry, ProjectRef
 
 
-AUTO_PROXY_LOW_LIMIT = 40
-AUTO_PROXY_HIGH_LIMIT = 83
-
-
-def _auto_proxy_key(plan_id, field):
-    return f"plan_auto_proxy_{field}_{int(plan_id)}"
+AUTO_PROXY_LIMITS = (10, 20, 30, 40, 50, 60, 70, 83)
 
 
 def auto_proxy_enabled(store, plan_id):
-    return store.get_state(_auto_proxy_key(plan_id, "enabled"), "0") == "1"
+    return store.auto_proxy_enabled(plan_id)
 
 
 def set_auto_proxy_enabled(store, plan_id, enabled, today):
-    store.set_state(_auto_proxy_key(plan_id, "enabled"), "1" if enabled else "0")
-    if not enabled:
-        return None, False
-    store.set_states({
-        _auto_proxy_key(plan_id, "date"): today,
-        _auto_proxy_key(plan_id, "limit"): AUTO_PROXY_LOW_LIMIT,
-    })
-    return sync_auto_proxy_plan(store, plan_id, today)
+    return store.sync_auto_proxy_plan(plan_id, today, AUTO_PROXY_LIMITS, enabled=enabled)
 
 
 def sync_auto_proxy_plan(store, plan_id, today):
-    if not auto_proxy_enabled(store, plan_id):
-        return None, False
-    saved_date = store.get_state(_auto_proxy_key(plan_id, "date"), "")
-    saved_limit = store.get_state(_auto_proxy_key(plan_id, "limit"), str(AUTO_PROXY_LOW_LIMIT))
-    phase_limit = int(saved_limit) if saved_limit in (str(AUTO_PROXY_LOW_LIMIT), str(AUTO_PROXY_HIGH_LIMIT)) else AUTO_PROXY_LOW_LIMIT
-    if saved_date and saved_date > today:
-        return phase_limit, False
-    if saved_date != today:
-        phase_limit = AUTO_PROXY_LOW_LIMIT
-    entries = store.list_plan_entries(plan_id)
-    if phase_limit == AUTO_PROXY_LOW_LIMIT and entries and all(
-        store.project_count(plan_id, row[4], today) >= AUTO_PROXY_LOW_LIMIT for row in entries
-    ):
-        phase_limit = AUTO_PROXY_HIGH_LIMIT
-    state_changes = {}
-    if saved_date != today:
-        state_changes[_auto_proxy_key(plan_id, "date")] = today
-    if saved_limit != str(phase_limit):
-        state_changes[_auto_proxy_key(plan_id, "limit")] = phase_limit
-    if state_changes:
-        store.set_states(state_changes)
-    limits_changed = any(int(row[7]) != phase_limit for row in entries)
-    if limits_changed:
-        store.update_plan_limits(plan_id, phase_limit)
-    return phase_limit, limits_changed
+    return store.sync_auto_proxy_plan(plan_id, today, AUTO_PROXY_LIMITS)
 
 
 def sync_auto_proxy_plans(store, today):

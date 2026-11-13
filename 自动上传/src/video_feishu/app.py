@@ -10,7 +10,7 @@ from .config import JsonSettingsStore, RetryStore, SecretStore, Settings, app_da
 from .models import PreviewItem
 from .service import OfficialFeishuGateway, PreviewResult, TaskService, mark_uploaded_names
 from .startup import set_auto_start
-from .tracking import DailyStatsStore, FeishuWriteQueue
+from .tracking import DailyStatsStore, FeishuWriteQueue, TrackingReadError
 from .uploader import OceanEngineUploader
 
 
@@ -185,10 +185,20 @@ class VideoFeishuApp:
             self.secret_store.set(app_id, secret)
 
     def _refresh_stats(self):
-        stats = self.stats_store.snapshot()
+        try:
+            stats = self.stats_store.snapshot()
+        except TrackingReadError as exc:
+            logging.warning("今日上传统计读取失败：%s", exc)
+            self.stats_text.set("今日上传统计读取失败，稍后重试")
+            return
+        try:
+            pending = self.feishu_write_queue.count(stats["date"])
+        except TrackingReadError as exc:
+            logging.warning("飞书待补写统计读取失败：%s", exc)
+            pending = "读取失败，稍后重试"
         self.stats_text.set(
             f"统计日期：{stats['date']}    今日成功：{stats['success']}    "
-            f"今日失败：{stats['failure']}    飞书待补写：{self.feishu_write_queue.count()}"
+            f"今日失败：{stats['failure']}    今日飞书待补写：{pending}"
         )
 
     def _stats_tick(self):
@@ -313,23 +323,26 @@ class VideoFeishuApp:
         def flush_feishu():
             if not settings.write_upload_success_to_feishu:
                 return
-            names = self.feishu_write_queue.load()
-            if not names:
-                return
             try:
+                names = self.feishu_write_queue.load()
+                if not names:
+                    return
                 completed = mark_uploaded_names(settings, secret, names)
+                if completed:
+                    self.feishu_write_queue.remove(completed)
             except Exception:
                 logging.exception("上传成功记录写入飞书失败，稍后重试")
                 return
-            self.feishu_write_queue.remove(completed)
             if missing := set(names) - completed:
                 logging.warning("粘贴表 A 列未匹配，保留待补写：%s", "、".join(sorted(missing)))
             self.root.after(0, self._refresh_stats)
 
         def on_succeeded(videos):
-            self.stats_store.record("success", videos)
+            if not videos:
+                return
+            day = self.stats_store.record("success", videos)
             if settings.write_upload_success_to_feishu:
-                self.feishu_write_queue.add([video.stem for video in videos])
+                self.feishu_write_queue.add([video.stem for video in videos], day=day)
                 flush_feishu()
             self.root.after(0, self._refresh_stats)
 

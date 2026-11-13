@@ -1,6 +1,6 @@
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -87,6 +87,85 @@ class RunOnceIntegrationTests(unittest.TestCase):
             self.assertEqual(POSTED_STATUS, row_updates[0][POST_STATUS_HEADER])
             self.assertEqual(1, store.project_count(plan_id, "2001", date.today().isoformat()))
             self.assertEqual("posted:promotion-1", store.get_state("runtime_last_result"))
+
+    def test_crossing_midnight_selects_and_reserves_against_the_new_day(self):
+        import desktop_posting.run_once as runner
+        from desktop_posting.plans import available_entries, set_auto_proxy_enabled, sync_auto_proxy_plan
+
+        old_day, new_day = date(2026, 11, 14), date(2026, 11, 15)
+        project = {"project_id": "2001", "name": "test-project_1"}
+        template = {
+            "promotion_id": "template-1",
+            "promotion_materials": {
+                "mini_program_info": {"app_id": self.app_id},
+                "video_material_list": [{}],
+            },
+        }
+
+        for crossing in ("quota_read", "target_lookup"):
+            with self.subTest(crossing=crossing), tempfile.TemporaryDirectory() as folder:
+                base_dir, store, plan_id = self.make_base_dir(folder)
+                set_auto_proxy_enabled(store, plan_id, True, old_day.isoformat())
+                for _ in range(10):
+                    store.increment_project_count(plan_id, "2001", old_day.isoformat())
+                sync_auto_proxy_plan(store, plan_id, old_day.isoformat())
+
+                def roll_over():
+                    clock.today.return_value = new_day
+                    sync_auto_proxy_plan(store, plan_id, new_day.isoformat())
+
+                def read_entries(state, selected_plan, day):
+                    if crossing == "quota_read" and day == old_day.isoformat():
+                        roll_over()
+                    return available_entries(state, selected_plan, day)
+
+                def lookup_target(entries, *_args, **_kwargs):
+                    if crossing == "target_lookup" and clock.today.return_value == old_day:
+                        roll_over()
+                    return entries[0], project, template
+
+                with (
+                    patch.object(runner, "date") as clock,
+                    patch.object(runner, "available_entries", side_effect=read_entries),
+                    patch.object(runner, "refresh_if_needed", return_value={"access_token": "offline-token"}),
+                    patch.object(runner, "claim_next_task", return_value=self.task()),
+                    patch.object(runner, "choose_compatible_target", side_effect=lookup_target),
+                    patch.object(runner, "search_materials", return_value=[{"filename": "test-book.mp4", "video_id": "video-1", "video_cover_id": "cover-1"}]),
+                    patch.object(runner, "create_with_unique_name", return_value=({"promotion_id": "promotion-1"}, 0)),
+                    patch.object(runner, "update_row"),
+                    patch.object(runner, "mark_row_green"),
+                    patch.object(runner, "release_task"),
+                ):
+                    clock.today.return_value = old_day
+                    result = runner.run_once(base_dir)
+
+                self.assertEqual("posted:promotion-1", result)
+                self.assertEqual(10, store.project_count(plan_id, "2001", old_day.isoformat()))
+                self.assertEqual(1, store.project_count(plan_id, "2001", new_day.isoformat()))
+
+    def test_full_quota_retries_at_midnight_following_the_quota_date(self):
+        import desktop_posting.run_once as runner
+
+        quota_day = date(2026, 11, 14)
+        with tempfile.TemporaryDirectory() as folder:
+            base_dir, store, plan_id = self.make_base_dir(folder)
+            store.update_entry_limit(store.list_plan_entries(plan_id)[0][0], 1)
+            store.increment_project_count(plan_id, "2001", quota_day.isoformat())
+            with (
+                patch.object(runner, "date") as clock,
+                patch.object(runner, "datetime") as wall_clock,
+                patch.object(runner, "refresh_if_needed", return_value={"access_token": "offline-token"}),
+                patch.object(runner, "claim_next_task", return_value=self.task()),
+                patch.object(runner, "choose_compatible_target", side_effect=AssertionError("Full quota must skip target lookup")),
+                patch.object(runner, "release_task") as release,
+            ):
+                clock.today.return_value = quota_day
+                # The wall clock crosses midnight after quota selection.
+                wall_clock.now.side_effect = [datetime(2026, 11, 14, 23, 59, 59), datetime(2026, 11, 15), datetime(2026, 11, 15)]
+                result = runner.run_once(base_dir)
+
+            self.assertEqual("all_projects_full", result)
+            self.assertEqual("2026-11-15 00:00:00", release.call_args.args[4])
 
     def test_no_compatible_template_releases_task_for_retry(self):
         import desktop_posting.run_once as runner

@@ -158,15 +158,21 @@ def run_once(base_dir, book_name=None):
             advertiser_id = locked_target["advertiser_id"]
             quota_project_id = None
         else:
-            counter_date = date.today().isoformat()
-            sync_auto_proxy_plan(store, plan_id, counter_date)
-            entries = available_entries(store, plan_id, counter_date)
-            if not entries:
-                retry_time = (datetime.now() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
-                release_task(settings, task, "所有项目今日额度已满", False, retry_time)
-                finish_runtime_activity(store, book, "", None, "all_projects_full")
-                return "all_projects_full"
-            target = choose_compatible_target(entries, token["access_token"], params, configured_app_id=settings.mini_program_app_id)
+            while True:
+                quota_day = date.today()
+                counter_date = quota_day.isoformat()
+                sync_auto_proxy_plan(store, plan_id, counter_date)
+                entries = available_entries(store, plan_id, counter_date)
+                if date.today() != quota_day:
+                    continue
+                if not entries:
+                    next_day = quota_day + timedelta(days=1)
+                    release_task(settings, task, "所有项目今日额度已满", False, f"{next_day.isoformat()} 00:00:00")
+                    finish_runtime_activity(store, book, "", None, "all_projects_full")
+                    return "all_projects_full"
+                target = choose_compatible_target(entries, token["access_token"], params, configured_app_id=settings.mini_program_app_id)
+                if date.today() == quota_day:
+                    break
             if not target: raise RuntimeError("没有与该程序链接兼容的项目模板")
             entry, project, template = target
             advertiser_id = entry.project.advertiser_id
